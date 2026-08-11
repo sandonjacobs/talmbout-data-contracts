@@ -11,7 +11,7 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm") version "2.0.21"
+    kotlin("jvm")
     id("com.google.protobuf") version "0.9.4"
     id("com.github.imflog.kafka-schema-registry-gradle-plugin") version "2.1.0"
     id("com.bakdata.avro") version "1.2.1"
@@ -34,7 +34,7 @@ sourceSets {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-    implementation("io.confluent.devrel:data-contracts-shared:+")
+    implementation(project(":shared"))
 
     implementation("org.apache.kafka:kafka-clients:${project.property("kafkaVersion")}")
     implementation("io.confluent:kafka-avro-serializer:${project.property("confluentVersion")}")
@@ -51,35 +51,36 @@ kotlin {
     jvmToolchain(17)
 }
 
-val schemaRegOutputDir = "${project.projectDir.absolutePath}/build/schema-registry-plugin"
-
-tasks.downloadSchemasTask {
-    doFirst {
-        mkdir(schemaRegOutputDir)
-    }
-}
-
-schemaRegistry {
-    val srProperties = Properties()
-    // At the moment, this is a file with which we are LOCALLY aware.
-    // In an ACTUAL CI/CD workflow, this would be externalized, perhaps provided from a base build image or other parameter.
-    srProperties.load(FileInputStream(File("${project.projectDir.absolutePath}/../shared/src/main/resources/confluent.properties")))
-
-    url = srProperties.getProperty("schema.registry.url")
-
-    val srCredTokens = srProperties.get("basic.auth.user.info").toString().split(":")
-    credentials {
-        username = srCredTokens[0]
-        password = srCredTokens[1]
-    }
-    outputDirectory = "${System.getProperty("user.home")}/tmp/schema-registry-plugin"
-    pretty = true
-
-    download {
-        // download the membership avro schema, version 1
-        subject("membership-avro-value", "${projectDir}/src/main/avro", 1)
-    }
-}
+// Temporarily disabled until Schema Registry credentials/config are wired back in.
+// val schemaRegOutputDir = "${project.projectDir.absolutePath}/build/schema-registry-plugin"
+//
+// tasks.downloadSchemasTask {
+//     doFirst {
+//         mkdir(schemaRegOutputDir)
+//     }
+// }
+//
+// schemaRegistry {
+//     val srProperties = Properties()
+//     // At the moment, this is a file with which we are LOCALLY aware.
+//     // In an ACTUAL CI/CD workflow, this would be externalized, perhaps provided from a base build image or other parameter.
+//     srProperties.load(FileInputStream(rootProject.file("shared/src/main/resources/confluent.properties")))
+//
+//     url = srProperties.getProperty("schema.registry.url")
+//
+//     val srCredTokens = srProperties.get("basic.auth.user.info").toString().split(":")
+//     credentials {
+//         username = srCredTokens[0]
+//         password = srCredTokens[1]
+//     }
+//     outputDirectory = "${System.getProperty("user.home")}/tmp/schema-registry-plugin"
+//     pretty = true
+//
+//     download {
+//         // download the membership avro schema, version 1
+//         subject("membership-avro-value", "${projectDir}/src/main/avro", 1)
+//     }
+// }
 
 tasks.clean {
     doFirst {

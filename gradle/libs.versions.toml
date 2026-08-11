@@ -1,0 +1,33 @@
+[versions]
+apache-avro = "1.12.0"
+apache-flink = "2.3.0"
+apache-kafka = "4.3.0"
+assertj = "3.27.7"
+avro-gradle-plugin = "2.0.0"
+confluent = "8.3.0"
+confluent-flink-plugin = "2.3-3"
+junit5 = "5.14.4"
+log4j = "2.26.1"
+schema-registry = "2.5.0"
+
+[libraries]
+apache-avro = { group = "org.apache.avro", name = "avro", version.ref = "apache-avro" }
+apache-flink-avro = { group = "org.apache.flink", name = "flink-avro", version.ref = "apache-flink" }
+apache-flink-clients = { group = "org.apache.flink", name = "flink-clients", version.ref = "apache-flink" }
+apache-flink-table-planner-loader = { group = "org.apache.flink", name = "flink-table-planner-loader", version.ref = "apache-flink" }
+apache-flink-table-runtime = { group = "org.apache.flink", name = "flink-table-runtime", version.ref = "apache-flink" }
+apache-kafka-clients = { group = "org.apache.kafka", name = "kafka-clients", version.ref = "apache-kafka" }
+assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
+confluent-avro-serializer = { group = "io.confluent", name = "kafka-avro-serializer", version.ref = "confluent" }
+confluent-flink-table = { group = "io.confluent.flink", name = "confluent-flink-table-api-java-plugin", version.ref = "confluent-flink-plugin" }
+junit5-jupiter = { group = "org.junit.jupiter",  name = "junit-jupiter", version.ref = "junit5" }
+junit5-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher" }
+log4j-api = { group = "org.apache.logging.log4j", name = "log4j-api", version.ref = "log4j" }
+log4j-core = { group = "org.apache.logging.log4j", name = "log4j-core", version.ref = "log4j" }
+log4j-slf4j-impl = { group = "org.apache.logging.log4j", name = "log4j-slf4j-impl", version.ref = "log4j" }
+
+[bundles]
+
+[plugins]
+avro-gradle = { id = "io.github.martinsjavacode.avro-gradle-plugin", version.ref = "avro-gradle-plugin" }
+schema-registry = { id = "com.github.imflog.kafka-schema-registry-gradle-plugin", version.ref = "schema-registry" }

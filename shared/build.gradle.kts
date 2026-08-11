@@ -1,15 +1,5 @@
-buildscript {
-    repositories {
-        mavenCentral()
-        maven("https://packages.confluent.io/maven/")
-        maven("https://jitpack.io")
-        gradlePluginPortal()
-    }
-}
-
 plugins {
-    kotlin("jvm") version "2.0.21"
-    `maven-publish`
+    kotlin("jvm")
 }
 
 group = "io.confluent.devrel"
@@ -47,16 +37,4 @@ dependencies {
 
 kotlin {
     jvmToolchain(17)
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = "io.confluent.devrel"
-            artifactId = "data-contracts-shared"
-            version = "0.0.1"
-
-            from(components["kotlin"])
-        }
-    }
 }
