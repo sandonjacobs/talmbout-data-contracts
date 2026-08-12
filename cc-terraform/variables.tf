@@ -23,5 +23,5 @@ variable "org_id" {
 variable "cc_env_display_name" {
   type = string
   description = "Name of Confluent Cloud Environment to Manage"
-  default = "demo-scene-data-contracts"
+  default = "talmbout-data-contracts"
 }

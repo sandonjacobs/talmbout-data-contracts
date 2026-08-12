@@ -1,6 +1,7 @@
 package io.confluent.devrel.dc.v1
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.main
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
@@ -21,9 +22,16 @@ import kotlin.time.Clock
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-fun main() {
+fun main(args: Array<String>) {
 
+    println("*** Starting App using Schema v1!!!")
 
+    val separatorIndex = args.indexOf("--")
+    val consumerArgs = if (separatorIndex >= 0) args.copyOfRange(0, separatorIndex) else args
+    val producerArgs = if (separatorIndex >= 0) args.copyOfRange(separatorIndex + 1, args.size) else emptyArray()
+
+    ConsumerCommand().main(consumerArgs)
+    ProducerCommand().main(producerArgs)
 }
 
 abstract class RootCommand : CliktCommand() {
@@ -38,7 +46,7 @@ abstract class RootCommand : CliktCommand() {
         overrides: Map<String, Any> = emptyMap()
     ): Properties {
         val props = Properties()
-        props.load(this::class.java.classLoader?.getResourceAsStream(path))
+        props.load(this::class.java.getResourceAsStream(path))
         props.putAll(overrides)
         return props
     }
@@ -59,7 +67,7 @@ class ConsumerCommand : RootCommand() {
         )
 
         val membershipConsumer =
-            MembershipConsumer(loadConfig(overrides = consumerConfigOverrides))
+            MembershipConsumer(loadConfig(configPath, consumerConfigOverrides))
 
         thread {
             membershipConsumer.start(listOf("membership-avro"))

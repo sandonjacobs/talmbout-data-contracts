@@ -23,7 +23,7 @@ data "confluent_schema_registry_cluster" "advanced" {
 // 'app-manager' service account is required in this configuration to create 'purchase' topic and grant ACLs
 // to 'app-producer' and 'app-consumer' service accounts.
 resource "confluent_service_account" "app-manager" {
-  display_name = "${var.cc_cluster_name}-app-manager"
+  display_name = "${var.cc_cluster_name}-app-mgr"
   description  = "Service account to manage Kafka cluster"
 }
 
@@ -34,7 +34,7 @@ resource "confluent_role_binding" "app-manager-kafka-cluster-admin" {
 }
 
 resource "confluent_api_key" "app-manager-kafka-api-key" {
-  display_name = "app-manager-kafka-api-key"
+  display_name = "${var.cc_cluster_name}-app-mgr-kafka-api-key"
   description  = "Kafka API Key that is owned by 'app-manager' service account"
   owner {
     id          = confluent_service_account.app-manager.id
@@ -65,7 +65,7 @@ resource "confluent_api_key" "app-manager-kafka-api-key" {
 }
 
 resource "confluent_service_account" "env-manager" {
-  display_name = "${var.cc_cluster_name}-env-manager"
+  display_name = "${var.cc_cluster_name}-env-mgr"
   description  = "Service account to manage 'Staging' environment"
 }
 
@@ -76,7 +76,7 @@ resource "confluent_role_binding" "env-manager-environment-admin" {
 }
 
 resource "confluent_api_key" "env-manager-schema-registry-api-key" {
-  display_name = "env-manager-schema-registry-api-key"
+  display_name = "${var.cc_cluster_name}-env-mgr-api-key"
   description  = "Schema Registry API Key that is owned by 'env-manager' service account"
   owner {
     id          = confluent_service_account.env-manager.id

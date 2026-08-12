@@ -19,43 +19,4 @@ terraform output -json \
 
 cd ../
 
-echo "-------------------------------------"
-echo ""
-echo "Building \`shared\` jar..."
-cd shared
-gradle wrapper --gradle-version latest
-./gradlew clean build publishToMavenLocal --info
-echo "Published \`shared\` code to local maven repository"
-cd ../
-
-echo "-------------------------------------"
-echo ""
-echo "Registering Schemas with Confluent Cloud Data Governance..."
-cd schemas
-gradle wrapper --gradle-version latest
-./gradlew clean registerSchemasTask --info
-echo "Schema registration complete."
-cd ../
-
-echo "-------------------------------------"
-echo ""
-echo "Generating Code from Schemas for \`app-schema-v1\` module..."
-cd app-schema-v1
-gradlew wrapper --gradle-version latest
-./gradlew clean generateCode --info
-echo "Code Generation Complete"
-cd ../
-echo "-------------------------------------"
-
-echo "Generating Code for \`app-schema-v2\` module..."
-echo ""
-cd app-schema-v2
-gradlew wrapper --gradle-version latest
-./gradlew clean generateCode --info
-echo "Code Generation Complete"
-cd ../
-
-echo "-------------------------------------"
-echo ""
-
 echo "Setup Complete!"
