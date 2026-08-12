@@ -1,54 +1,44 @@
-import java.io.FileInputStream
-import java.util.Properties
-
-buildscript {
-    repositories {
-        mavenCentral()
-        maven("https://packages.confluent.io/maven/")
-        maven("https://jitpack.io")
-        gradlePluginPortal()
-    }
-}
-
 plugins {
-    kotlin("jvm")
-    id("com.google.protobuf") version "0.9.4"
-    id("com.github.imflog.kafka-schema-registry-gradle-plugin") version "2.1.0"
-    id("com.bakdata.avro") version "1.2.1"
-}
-
-group = "io.confluent.devrel"
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven("https://packages.confluent.io/maven/")
-    maven("https://jitpack.io")
+    kotlin("jvm") apply true
+    alias(libs.plugins.google.protobuf) apply true
+    alias(libs.plugins.schema.registry) apply true
+    alias(libs.plugins.avro.gradle) apply true
 }
 
 sourceSets {
     main {
-        kotlin.srcDirs("src/main/kotlin", "build/generated-main-avro-java")
+        kotlin.srcDirs("src/main/kotlin", "build/generated/java")
     }
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
     implementation(project(":shared"))
+    implementation(libs.kotlinx.coroutines.core)
 
-    implementation("org.apache.kafka:kafka-clients:${project.property("kafkaVersion")}")
-    implementation("io.confluent:kafka-avro-serializer:${project.property("confluentVersion")}")
+    implementation(libs.clikt)
+    implementation(libs.clikt.markdown)
 
-    implementation("io.github.serpro69:kotlin-faker:${project.property("fakerVersion")}")
-    implementation("io.github.serpro69:kotlin-faker-books:${project.property("fakerVersion")}")
-    implementation("io.github.serpro69:kotlin-faker-tech:${project.property("fakerVersion")}")
+    implementation(libs.apache.kafka.clients)
+    implementation(libs.confluent.avro.serializer)
+
+    implementation(libs.kotlin.faker)
+//    implementation(libs.kotlin.faker.books)
+//    implementation(libs.kotlin.faker.tech)
 
     implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.6")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+    implementation(libs.kotlinx.datetime)
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
+}
+
+avro {
+    sourceDir.set("src/main/avro")
+}
+
+tasks.named("compileKotlin") {
+    dependsOn("generateAvroClasses")
 }
 
 // Temporarily disabled until Schema Registry credentials/config are wired back in.
@@ -82,14 +72,14 @@ kotlin {
 //     }
 // }
 
-tasks.clean {
-    doFirst {
-        delete(fileTree("${projectDir}/src/main/avro/").include("**/*.avsc"))
-    }
-}
+//tasks.clean {
+//    doFirst {
+//        delete(fileTree("${projectDir}/src/main/avro/").include("**/*.avsc"))
+//    }
+//}
 
-tasks.register("generateCode") {
-    group = "source generation"
-    description = "wrapper task for all source generation"
-    dependsOn("downloadSchemasTask", "generateAvroJava", "generateProto")
-}
+//tasks.register("generateCode") {
+//    group = "source generation"
+//    description = "wrapper task for all source generation"
+//    dependsOn("downloadSchemasTask", "generateAvroJava", "generateProto")
+//}

@@ -3,7 +3,7 @@ import java.util.Properties
 
 plugins {
     kotlin("jvm")
-    id("com.google.protobuf") apply true
+    alias(libs.plugins.google.protobuf) apply true
     alias(libs.plugins.schema.registry) apply true
     alias(libs.plugins.avro.gradle) apply true
 }

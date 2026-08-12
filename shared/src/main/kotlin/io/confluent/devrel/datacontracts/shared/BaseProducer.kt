@@ -8,20 +8,13 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.Future
 
-abstract class BaseProducer<Key, Value>(propOverrides: Map<String, Any> = mapOf<String, Any>()) {
+abstract class BaseProducer<Key, Value>(properties: Properties) {
 
     companion object {
-        fun getProducerProperties(propOverrides: Map<String, Any>): Properties {
-            val props = Properties()
-            props.load(this::class.java.classLoader.getResourceAsStream("confluent.properties"))
-            props.putAll(propOverrides)
-            return props
-        }
-
         val logger: Logger = LoggerFactory.getLogger(javaClass)
     }
 
-    val kafkaProducer: KafkaProducer<Key, Value> = KafkaProducer(getProducerProperties(propOverrides))
+    private val kafkaProducer: KafkaProducer<Key, Value> = KafkaProducer(properties)
 
     open fun send(topicName: String, key: Key, value: Value): Future<RecordMetadata?>? {
         val record = ProducerRecord(topicName, key, value)

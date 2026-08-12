@@ -9,7 +9,7 @@ buildscript {
 plugins {
     kotlin("jvm") version "2.4.10" apply false
     alias(libs.plugins.schema.registry) apply false
-    id("com.google.protobuf") version "0.10.0" apply false
+    alias(libs.plugins.google.protobuf) apply false
     alias(libs.plugins.avro.gradle) apply false
 }
 

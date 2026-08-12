@@ -3,23 +3,15 @@ package io.confluent.devrel.datacontracts.shared
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.*
+import java.util.Properties
 
-abstract class BaseConsumer<Key, Value>(propOverrides: Map<String, Any> = mapOf<String, Any>()) {
+abstract class BaseConsumer<Key, Value>(properties: Properties) {
 
     companion object {
         val logger = LoggerFactory.getLogger(BaseConsumer::class.java)
-
-        fun getConsumerProperties(propOverrides: Map<String, Any>): Properties {
-            val props = Properties()
-            props.load(this::class.java.classLoader.getResourceAsStream("confluent.properties"))
-            props.put("specific.avro.reader", "true")
-            props.putAll(propOverrides)
-            return props
-        }
     }
 
-    val kafkaConsumer: KafkaConsumer<Key, Value> = KafkaConsumer(getConsumerProperties(propOverrides))
+    private val kafkaConsumer: KafkaConsumer<Key, Value> = KafkaConsumer(properties)
 
     fun start(topics: List<String>) {
         kafkaConsumer.subscribe(topics)

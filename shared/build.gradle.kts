@@ -1,40 +1,32 @@
 plugins {
-    kotlin("jvm")
+    kotlin("jvm") apply true
 }
 
-group = "io.confluent.devrel"
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven("https://packages.confluent.io/maven/")
-    maven("https://jitpack.io")
-}
 
 dependencies {
-    implementation("org.slf4j:slf4j-api:${project.property("slf4jVersion")}")
-    implementation("org.slf4j:slf4j-simple:${project.property("slf4jVersion")}")
-    implementation("ch.qos.logback:logback-core:1.4.14")
+    implementation(libs.slf4j.api)
+    implementation(libs.slf4j.simple)
+    implementation(libs.logback.core)
 
-    implementation("io.github.serpro69:kotlin-faker:${project.property("fakerVersion")}")
-    implementation("io.github.serpro69:kotlin-faker-books:${project.property("fakerVersion")}")
-    implementation("io.github.serpro69:kotlin-faker-tech:${project.property("fakerVersion")}")
+    implementation(libs.kotlin.faker)
+//    implementation(libs.kotlin.faker.books)
+//    implementation(libs.kotlin.faker.tech)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.6")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+    implementation(libs.clikt)
+    implementation(libs.clikt.markdown)
 
-    implementation("io.grpc:grpc-stub:${project.property("grpcVersion")}")
-    implementation("io.grpc:grpc-protobuf:${project.property("grpcVersion")}")
-    implementation("com.google.protobuf:protobuf-java:${project.property("protobufVersion")}")
+    implementation(libs.grpc.stub)
+    implementation(libs.grpc.protobuf)
+    implementation(libs.google.protobuf.java)
 
-    implementation("org.apache.kafka:kafka-clients:3.8.0")
-    implementation("io.confluent:kafka-avro-serializer:${project.property("confluentVersion")}")
-    implementation("io.confluent:kafka-protobuf-serializer:${project.property("confluentVersion")}")
-    implementation("io.confluent:kafka-schema-rules:${project.property("confluentVersion")}")
+    implementation(libs.apache.kafka.clients)
+    implementation(libs.confluent.avro.serializer)
+    implementation(libs.confluent.protobuf.serializer)
+    implementation(libs.confluent.schema.rules)
 
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
