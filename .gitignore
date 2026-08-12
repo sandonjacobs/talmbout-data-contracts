@@ -22,9 +22,12 @@ gradle-app.setting
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 
-# I don't want any IntelliJ metadata in the repo.
+# I don't want any IntelliJ metadata in the repo!
 .idea/
 
 # For IBM BOB
 .bob/
+# For Claude Code
+.claude/
+
 
