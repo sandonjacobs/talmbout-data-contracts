@@ -92,7 +92,7 @@ And Data Contracts:
 
 
 Locally, we also create a `properties` file containing the parameters needed for our Kafka clients to connect to Confluent Cloud. For an example of this 
-`properties` file, see [confluent.properties.orig](shared/src/main/resources/confluent.properties.orig).
+`properties` file, see [confluent.properties.orig](shared/src/main/resources/.confluent.properties.template).
 
 > **NOTE**: The file-based approach we're using here is NOT recommended for a production-quality application. Perhaps a secrets manager implementation would be better suited - which the major cloud providers all offer, or perhaps a tool like Hashicorp Vault. Such a tool would also have client libraries in a Maven repository for the JVM applications to access the secrets.
 > 
@@ -101,7 +101,7 @@ Locally, we also create a `properties` file containing the parameters needed for
 
 The schema register/download Gradle tasks and the `app-schema-v1` producer/consumer aren't pinned to Confluent Cloud — they load their connection info from
 whichever properties file you point them at. To run against a self-hosted Kafka + Schema Registry (docker/podman or otherwise), copy
-[local.properties.orig](shared/src/main/resources/local.properties.orig) to `shared/src/main/resources/local.properties`, fill in your stack's
+[local.properties.orig](shared/src/main/resources/.local.properties.template) to `shared/src/main/resources/local.properties`, fill in your stack's
 `bootstrap.servers`/`schema.registry.url` (a local registry typically needs no `basic.auth.*` credentials), then:
 
 - Gradle schema register/download tasks: pass `-PschemaRegistryConfig=local.properties`, e.g. `./gradlew :schemas:registerSchemasTask -PschemaRegistryConfig=local.properties`.

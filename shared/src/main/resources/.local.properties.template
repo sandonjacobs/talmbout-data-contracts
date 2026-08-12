@@ -1,0 +1,16 @@
+# Example properties file for a local Kafka + Schema Registry stack (docker/podman), as an
+# alternative to confluent.properties (Confluent Cloud). Copy this to local.properties, adjust
+# bootstrap.servers/schema.registry.url to match your local stack, then:
+#   - Gradle schema register/download tasks: pass -PschemaRegistryConfig=local.properties
+#   - app-schema-v1 producer/consumer: pass -p /local.properties
+bootstrap.servers=localhost:9092
+
+security.protocol=PLAINTEXT
+
+# Required connection config for a local Schema Registry. No basic.auth.* keys here: a local
+# registry typically has no auth, and both the Gradle schema-registry-config script and the
+# runtime client treat their absence as "no credentials" rather than requiring dummy values.
+schema.registry.url=http://localhost:8081
+
+# Convenient for local iteration; Confluent Cloud config normally sets this to false.
+auto.register.schemas=true

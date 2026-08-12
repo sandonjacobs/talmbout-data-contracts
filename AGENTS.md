@@ -181,7 +181,7 @@ The project currently focuses on demonstration rather than comprehensive testing
 ### Local Development Alternative
 
 To run against local Kafka/Schema Registry instead of Confluent Cloud:
-1. Copy `shared/src/main/resources/local.properties.orig` to `local.properties`
+1. Copy `shared/src/main/resources/.local.properties.template` to `local.properties`
 2. Configure `bootstrap.servers` and `schema.registry.url`
 3. Pass `-PschemaRegistryConfig=local.properties` to Gradle tasks
 4. Pass `-p /local.properties` to application run commands
