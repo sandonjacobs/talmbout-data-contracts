@@ -111,13 +111,47 @@ Omitting these flags keeps the default behavior of using `confluent.properties` 
 
 ### Run the Examples
 
-In `app-schema-v1`, the `ApplicationMain` object's `main` function starts a consumer in a new thread to subscribe to the `membership-avro` topic. It then begins
-producing randomly-generated events to `membership-avro` at a provided interval for a provided duration. By default, an event is produced every 1 second for 100 seconds. These events are created and consumed using version 1 of the membership schema. The console output of the consumer should look something like this:
+The `app-schema-v1` application provides separate commands for running a consumer or producer independently, making it ideal for conference demos where you want to show them in separate terminal windows.
+
+**Start a Consumer** (in one terminal):
 
 ```shell
+./gradlew :app-schema-v1:run --args="consumer"
+```
+
+The consumer subscribes to the `membership-avro` topic and displays events using version 1 of the membership schema:
+
+```shell
+*** Starting Consumer using Schema v1!!!
 [Thread-0] INFO io.confluent.devrel.datacontracts.shared.BaseConsumer - Received Membership d0e65c83-b1c5-451d-b08b-8d1ed6fca8d6, {"user_id": "d0e65c83-b1c5-451d-b08b-8d1ed6fca8d6", "start_date": "2023-01-14", "end_date": "2025-05-28"}
 [Thread-0] INFO io.confluent.devrel.datacontracts.shared.BaseConsumer - Received Membership 940cf6fa-eb12-46af-87e8-5a9bc33df119, {"user_id": "940cf6fa-eb12-46af-87e8-5a9bc33df119", "start_date": "2023-05-23", "end_date": "2025-07-02"}
 ```
+
+**Start a Producer** (in another terminal):
+
+```shell
+./gradlew :app-schema-v1:run --args="producer"
+```
+
+By default, the producer generates and sends one event per second for 10 seconds. You can customize this:
+
+```shell
+# Produce events every 2 seconds for 60 seconds
+./gradlew :app-schema-v1:run --args="producer -i 2 -d 60"
+```
+
+**Available Options:**
+
+For both consumer and producer:
+- `-p, --config-path`: Path to properties file (default: `/confluent.properties`)
+- `-c, --client-id`: Kafka client ID (default: `schema-v1`)
+
+Consumer-specific:
+- `-g, --group-id`: Consumer group ID (default: `schema-v1`)
+
+Producer-specific:
+- `-i, --interval`: Interval between events in seconds (default: `1`)
+- `-d, --duration`: How long to produce events in seconds (default: `10`)
 
 The `app-schema-v2` module's `main` function starts a consumer subscribed to the `membership-avro` topic. But this time, events will be consumed using
 version 2 of the membership schema. Notice the `Map` of consumer overrides in the constructor of the `MembershipConsumer` in that module. As such, those

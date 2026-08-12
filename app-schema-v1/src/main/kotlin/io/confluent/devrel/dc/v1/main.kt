@@ -2,6 +2,7 @@ package io.confluent.devrel.dc.v1
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.main
+import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
@@ -9,12 +10,14 @@ import io.confluent.devrel.Membership
 import io.confluent.devrel.dc.v1.kafka.MembershipConsumer
 import io.confluent.devrel.dc.v1.kafka.MembershipProducer
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
+import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
+import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.util.*
 import kotlin.concurrent.thread
@@ -23,16 +26,14 @@ import kotlin.time.Clock
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-fun main(args: Array<String>) {
+val _logger = LoggerFactory.getLogger("io.confluent.devrel.dc.v1.main")
 
-    println("*** Starting App using Schema v1!!!")
+fun main(args: Array<String>) = ApplicationCommand()
+    .subcommands(ConsumerCommand(), ProducerCommand())
+    .main(args)
 
-    val separatorIndex = args.indexOf("--")
-    val consumerArgs = if (separatorIndex >= 0) args.copyOfRange(0, separatorIndex) else args
-    val producerArgs = if (separatorIndex >= 0) args.copyOfRange(separatorIndex + 1, args.size) else emptyArray()
-
-    ConsumerCommand().main(consumerArgs)
-    ProducerCommand().main(producerArgs)
+class ApplicationCommand : CliktCommand(name = "app-schema-v1") {
+    override fun run() = Unit
 }
 
 abstract class RootCommand : CliktCommand() {
@@ -59,12 +60,13 @@ class ConsumerCommand : RootCommand() {
         .default("schema-v1")
 
     override fun run() {
+        println("*** Starting Consumer using Schema v1!!!")
 
         val consumerConfigOverrides = mapOf(
             ConsumerConfig.GROUP_ID_CONFIG to groupId,
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to "org.apache.kafka.common.serialization.StringDeserializer",
             ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to "io.confluent.kafka.serializers.KafkaAvroDeserializer",
-            "specific.avro.reader" to "true"
+            KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to "true"
         )
 
         val membershipConsumer =
@@ -86,6 +88,7 @@ class ProducerCommand : RootCommand() {
         .default(10)
 
     override fun run() {
+        println("*** Starting Producer using Schema v1!!!")
 
         val howOften = interval.toDuration(DurationUnit.SECONDS)
         val howLong = duration.toDuration(DurationUnit.SECONDS)
@@ -107,6 +110,7 @@ class ProducerCommand : RootCommand() {
             coroutineScope {
                 launch {
                     val until = Clock.System.now().plus(howLong)
+                    _logger.info("---> Sending messages until {}", until)
                     while (Clock.System.now() < until) {
                         val userId = UUID.randomUUID().toString()
                         val membership = Membership.newBuilder()
@@ -115,7 +119,8 @@ class ProducerCommand : RootCommand() {
                             .setEndDate(LocalDate.now().plusWeeks(Random.nextLong(1, 52)))
                             .build()
                         producer.send("membership-avro", userId, membership)
-                        delay(howOften.inWholeSeconds)
+                        _logger.debug("---> Sent message with userId {}, sleeping for {}", userId, howOften)
+                        delay(howOften)
                     }
                 }
             }

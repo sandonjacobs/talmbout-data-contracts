@@ -5,8 +5,7 @@ plugins {
 
 dependencies {
     implementation(libs.slf4j.api)
-    implementation(libs.slf4j.simple)
-    implementation(libs.logback.core)
+    implementation(libs.logback.classic)
 
     implementation(libs.kotlin.faker)
 

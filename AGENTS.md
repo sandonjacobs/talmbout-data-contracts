@@ -87,16 +87,26 @@ The key architectural pattern is that `app-schema-v1` produces events using v1 s
 
 ### Running Applications
 
-**Schema v1 Application** (Producer + Consumer):
+**Schema v1 Application** - Run consumer and producer in separate terminals:
+
+Consumer (in one terminal):
 ```bash
-# Default: produces 1 event/second for 100 seconds
-./gradlew :app-schema-v1:run
+./gradlew :app-schema-v1:run --args="consumer"
+
+# With custom config and group ID
+./gradlew :app-schema-v1:run --args="consumer -p /local.properties -g my-group"
+```
+
+Producer (in another terminal):
+```bash
+# Default: produces 1 event/second for 10 seconds
+./gradlew :app-schema-v1:run --args="producer"
 
 # Custom intervals
-./gradlew :app-schema-v1:run --args="-i 2 -d 60"  # 2 sec interval, 60 sec duration
+./gradlew :app-schema-v1:run --args="producer -i 2 -d 60"  # 2 sec interval, 60 sec duration
 
 # With custom config file
-./gradlew :app-schema-v1:run --args="-p /local.properties"
+./gradlew :app-schema-v1:run --args="producer -p /local.properties"
 ```
 
 **Schema v2 Application** (Consumer only):

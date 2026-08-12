@@ -1,8 +1,13 @@
 plugins {
     kotlin("jvm") apply true
+    application
     alias(libs.plugins.google.protobuf) apply true
     alias(libs.plugins.schema.registry) apply true
     alias(libs.plugins.avro.gradle) apply true
+}
+
+application {
+    mainClass.set("io.confluent.devrel.dc.v1.MainKt")
 }
 
 sourceSets {
@@ -23,7 +28,6 @@ dependencies {
     implementation(libs.confluent.avro.serializer)
 
     implementation(libs.kotlin.faker)
-    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.6")
     implementation(libs.kotlinx.datetime)
 }
 
