@@ -8,6 +8,7 @@ import com.github.ajalt.clikt.parameters.types.int
 import io.confluent.devrel.Membership
 import io.confluent.devrel.dc.v1.kafka.MembershipConsumer
 import io.confluent.devrel.dc.v1.kafka.MembershipProducer
+import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -92,7 +93,8 @@ class ProducerCommand : RootCommand() {
         val producerConfigOverrides = mapOf(
             ProducerConfig.CLIENT_ID_CONFIG to clientId,
             ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to "org.apache.kafka.common.serialization.StringSerializer",
-            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to "io.confluent.kafka.serializers.KafkaAvroSerializer"
+            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to "io.confluent.kafka.serializers.KafkaAvroSerializer",
+            AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION to true
         )
         val producer = MembershipProducer(
             loadConfig(

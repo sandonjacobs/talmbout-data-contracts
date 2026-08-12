@@ -9,8 +9,6 @@ dependencies {
     implementation(libs.logback.core)
 
     implementation(libs.kotlin.faker)
-//    implementation(libs.kotlin.faker.books)
-//    implementation(libs.kotlin.faker.tech)
 
     implementation(libs.clikt)
     implementation(libs.clikt.markdown)
