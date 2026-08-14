@@ -30,4 +30,9 @@ gradle-app.setting
 # For Claude Code
 .claude/
 
+# Environment configuration
+.env
+
+# Local container setup
+docker-compose.yml
 
