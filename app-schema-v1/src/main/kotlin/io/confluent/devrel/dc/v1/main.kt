@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.util.*
@@ -26,7 +27,7 @@ import kotlin.time.Clock
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-val _logger = LoggerFactory.getLogger("io.confluent.devrel.dc.v1.main")
+val logger: Logger? = LoggerFactory.getLogger("io.confluent.devrel.dc.v1.main")
 
 fun main(args: Array<String>) = ApplicationCommand()
     .subcommands(ConsumerCommand(), ProducerCommand())
@@ -60,13 +61,15 @@ class ConsumerCommand : RootCommand() {
         .default("schema-v1")
 
     override fun run() {
-        println("*** Starting Consumer using Schema v1!!!")
 
         val consumerConfigOverrides = mapOf(
             ConsumerConfig.GROUP_ID_CONFIG to groupId,
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to "org.apache.kafka.common.serialization.StringDeserializer",
             ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to "io.confluent.kafka.serializers.KafkaAvroDeserializer",
-            KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to "true"
+            KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to "true",
+            AbstractKafkaSchemaSerDeConfig.LATEST_COMPATIBILITY_STRICT to true,
+            AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION to false,
+            AbstractKafkaSchemaSerDeConfig.USE_LATEST_WITH_METADATA to "major_version=1"
         )
 
         val membershipConsumer =
@@ -88,7 +91,6 @@ class ProducerCommand : RootCommand() {
         .default(30)
 
     override fun run() {
-        println("*** Starting Producer using Schema v1!!!")
 
         val howOften = interval.toDuration(DurationUnit.MILLISECONDS)
         val howLong = duration.toDuration(DurationUnit.SECONDS)
@@ -97,7 +99,9 @@ class ProducerCommand : RootCommand() {
             ProducerConfig.CLIENT_ID_CONFIG to clientId,
             ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to "org.apache.kafka.common.serialization.StringSerializer",
             ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to "io.confluent.kafka.serializers.KafkaAvroSerializer",
-            AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION to true
+            AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION to true,
+            AbstractKafkaSchemaSerDeConfig.LATEST_COMPATIBILITY_STRICT to true,
+            AbstractKafkaSchemaSerDeConfig.USE_LATEST_WITH_METADATA to "major_version=1"
         )
         val producer = MembershipProducer(
             loadConfig(
@@ -110,7 +114,7 @@ class ProducerCommand : RootCommand() {
             coroutineScope {
                 launch {
                     val until = Clock.System.now().plus(howLong)
-                    _logger.info("---> Sending messages until {}", until)
+                    logger?.info("---> Sending messages until {}", until)
                     while (Clock.System.now() < until) {
                         val userId = UUID.randomUUID().toString()
                         val membership = Membership.newBuilder()
@@ -119,7 +123,7 @@ class ProducerCommand : RootCommand() {
                             .setEndDate(LocalDate.now().plusWeeks(Random.nextLong(1, 52)))
                             .build()
                         producer.send("membership-avro", userId, membership)
-                        _logger.debug("---> Sent message with userId {}, sleeping for {}", userId, howOften)
+                        logger?.debug("---> Sent message with userId {}, sleeping for {}", userId, howOften)
                         delay(howOften)
                     }
                 }

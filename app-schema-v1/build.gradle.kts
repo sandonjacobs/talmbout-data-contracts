@@ -68,7 +68,7 @@ schemaRegistry {
 
     register {
         subject(inputSubject = "membership-avro-value", type = "AVRO", file = "${projectDir}/src/main/avro/membership_v1.avsc")
-            //.setMetadata("${projectDir}/src/main/rules/membership_major_version_1.json")
+            .setMetadata("${projectDir}/src/main/rules/membership_major_version_1.json")
     }
 }
 
