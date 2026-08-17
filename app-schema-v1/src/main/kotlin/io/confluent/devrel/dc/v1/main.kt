@@ -80,17 +80,17 @@ class ConsumerCommand : RootCommand() {
 
 class ProducerCommand : RootCommand() {
 
-    val interval: Int by option("-i", "--interval", help = "Interval in seconds")
+    val interval: Int by option("-i", "--interval", help = "Interval in milliseconds")
         .int()
-        .default(1)
+        .default(100)
     val duration: Int by option("-d", "--duration", help = "Duration in seconds")
         .int()
-        .default(10)
+        .default(30)
 
     override fun run() {
         println("*** Starting Producer using Schema v1!!!")
 
-        val howOften = interval.toDuration(DurationUnit.SECONDS)
+        val howOften = interval.toDuration(DurationUnit.MILLISECONDS)
         val howLong = duration.toDuration(DurationUnit.SECONDS)
 
         val producerConfigOverrides = mapOf(
