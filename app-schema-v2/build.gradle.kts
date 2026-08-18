@@ -1,95 +1,147 @@
-import java.io.FileInputStream
-import java.util.Properties
-
-buildscript {
-    repositories {
-        mavenCentral()
-        maven("https://packages.confluent.io/maven/")
-        maven("https://jitpack.io")
-        gradlePluginPortal()
-    }
-}
+import org.apache.avro.Schema
+import org.apache.avro.SchemaParseException
 
 plugins {
-    kotlin("jvm")
-    id("com.google.protobuf") version "0.9.4"
-    id("com.github.imflog.kafka-schema-registry-gradle-plugin") version "2.1.0"
-    id("com.bakdata.avro") version "1.2.1"
+    kotlin("jvm") apply true
+    application
+    alias(libs.plugins.google.protobuf) apply true
+    alias(libs.plugins.schema.registry) apply true
+    alias(libs.plugins.avro.gradle) apply true
 }
 
-group = "io.confluent.devrel"
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven("https://packages.confluent.io/maven/")
-    maven("https://jitpack.io")
+application {
+    mainClass.set("io.confluent.devrel.dc.v1.MainKt")
 }
 
 sourceSets {
     main {
-        kotlin.srcDirs("src/main/kotlin", "build/generated-main-avro-java")
+        kotlin.srcDirs("src/main/kotlin", "build/generated/java")
+        java.srcDirs("build/generated/java")
     }
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
     implementation(project(":shared"))
+    implementation(libs.kotlinx.coroutines.core)
 
-    implementation("org.apache.kafka:kafka-clients:${project.property("kafkaVersion")}")
-    implementation("io.confluent:kafka-avro-serializer:${project.property("confluentVersion")}")
+    implementation(libs.clikt)
+    implementation(libs.clikt.markdown)
 
-    implementation("io.github.serpro69:kotlin-faker:${project.property("fakerVersion")}")
-    implementation("io.github.serpro69:kotlin-faker-books:${project.property("fakerVersion")}")
-    implementation("io.github.serpro69:kotlin-faker-tech:${project.property("fakerVersion")}")
+    implementation(libs.apache.kafka.clients)
+    implementation(libs.confluent.avro.serializer)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.6")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+    implementation(libs.kotlin.faker)
+    implementation(libs.kotlinx.datetime)
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
 
-// Temporarily disabled until Schema Registry credentials/config are wired back in.
-// val schemaRegOutputDir = "${project.projectDir.absolutePath}/build/schema-registry-plugin"
-//
-// tasks.downloadSchemasTask {
-//     doFirst {
-//         mkdir(schemaRegOutputDir)
-//     }
-// }
-//
-// schemaRegistry {
-//     val srProperties = Properties()
-//     // At the moment, this is a file with which we are LOCALLY aware.
-//     // In an ACTUAL CI/CD workflow, this would be externalized, perhaps provided from a base build image or other parameter.
-//     srProperties.load(FileInputStream(rootProject.file("shared/src/main/resources/confluent.properties")))
-//
-//     url = srProperties.getProperty("schema.registry.url")
-//
-//     val srCredTokens = srProperties.get("basic.auth.user.info").toString().split(":")
-//     credentials {
-//         username = srCredTokens[0]
-//         password = srCredTokens[1]
-//     }
-//     outputDirectory = "${System.getProperty("user.home")}/tmp/schema-registry-plugin"
-//     pretty = true
-//
-//     download {
-//         // download the membership avro schema, version 2
-//         subject("membership-avro-value", "${projectDir}/src/main/avro", 2)
-//     }
-// }
+// The martinsjavacode avro-gradle-plugin parses each .avsc file with its own isolated
+// Schema.Parser, so it can never resolve a type defined in a sibling file (e.g.
+// membership_v2.avsc referencing io.confluent.devrel.ValidityPeriod from
+// validity_period.avsc). This task pre-resolves the real source files with a single
+// shared Parser and writes out self-contained copies (referenced types inlined) that
+// the plugin can then parse in isolation without changing the on-disk source files,
+// which stay separate so they can still be registered/reused independently in the
+// Schema Registry.
+val avroSourceDir = layout.projectDirectory.dir("src/main/avro")
+val resolvedAvroDir = layout.buildDirectory.dir("resolved-avro")
 
-tasks.clean {
-    doFirst {
-        delete(fileTree("${projectDir}/src/main/avro/").include("**/*.avsc"))
+val resolveAvroSchemas by tasks.registering {
+    group = "build"
+    description = "Resolves cross-file Avro schema references into self-contained copies"
+
+    inputs.dir(avroSourceDir)
+    outputs.dir(resolvedAvroDir)
+
+    doLast {
+        val outputDir = resolvedAvroDir.get().asFile
+        outputDir.deleteRecursively()
+        outputDir.mkdirs()
+
+        var remaining = avroSourceDir.asFile.listFiles { file -> file.extension == "avsc" }?.toList()
+            ?: emptyList()
+        val resolved = linkedMapOf<File, Schema>()
+        val parser = Schema.Parser()
+
+        while (remaining.isNotEmpty()) {
+            val stillPending = mutableListOf<File>()
+            var progressed = false
+            for (file in remaining) {
+                try {
+                    resolved[file] = parser.parse(file)
+                    progressed = true
+                } catch (e: SchemaParseException) {
+                    stillPending.add(file)
+                }
+            }
+            if (!progressed) {
+                throw GradleException(
+                    "Could not resolve Avro schema dependency for: " +
+                        stillPending.joinToString(", ") { it.name },
+                )
+            }
+            remaining = stillPending
+        }
+
+        resolved.forEach { (file, schema) ->
+            File(outputDir, file.name).writeText(schema.toString(true))
+        }
     }
 }
 
-tasks.register("generateCode") {
-    group = "source generation"
-    description = "wrapper task for all source generation"
-    dependsOn("downloadSchemasTask", "generateAvroJava", "generateProto")
+avro {
+    sourceDir.set(resolvedAvroDir.map { it.asFile.absolutePath })
 }
+
+tasks.named("validateAvroSchemas") {
+    dependsOn(resolveAvroSchemas)
+}
+
+tasks.named("generateAvroClasses") {
+    dependsOn(resolveAvroSchemas)
+}
+
+tasks.named("compileKotlin") {
+    dependsOn("generateAvroClasses")
+}
+
+tasks.named("compileJava") {
+    dependsOn("generateAvroClasses")
+}
+
+apply(from = "$rootDir/gradle/schema-registry-config.gradle.kts")
+
+val schemaRegOutputDir = "${project.projectDir.absolutePath}/build/schema-registry-plugin"
+
+tasks.registerSchemasTask {
+    dependsOn(resolveAvroSchemas)
+    doFirst {
+        mkdir(schemaRegOutputDir)
+    }
+}
+
+schemaRegistry {
+    url = project.extra["srUrl"] as String
+
+    @Suppress("UNCHECKED_CAST")
+    clientConfig = project.extra["srClientConfig"] as Map<String, String>
+
+    outputDirectory = schemaRegOutputDir
+    pretty = true
+
+    register {
+        // Registered first so it exists as its own subject/version before membership-avro-value
+        // below resolves a real reference to it (RegisterTaskAction registers subjects in the
+        // order they're declared here).
+        subject(inputSubject = "validity-period-value", type = "AVRO", file = "${projectDir}/src/main/avro/validity_period.avsc")
+
+        subject(inputSubject = "membership-avro-value", type = "AVRO", file = "${projectDir}/src/main/avro/membership_v2.avsc")
+            .addReference("io.confluent.devrel.ValidityPeriod", "validity-period-value", -1)
+            .setMetadata("${projectDir}/src/main/rules/membership_major_version_2.json")
+
+    }
+}
+
