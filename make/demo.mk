@@ -62,7 +62,7 @@ demo-consumer-v2: ## Run v2 consumer (with migration rules)
 	@echo "This consumer uses schema v2 and will automatically transform"
 	@echo "v1 events using migration rules in Schema Registry."
 	@echo ""
-	@./gradlew :app-schema-v2:run --args="consumer -p $(CONFIG_PATH) -g $(CONSUMER_GROUP_V2)"
+	@./gradlew :app-schema-v2:run --args="-p $(CONFIG_PATH) -g $(CONSUMER_GROUP_V2)"
 
 demo-full: ## Show all demo parameters
 	@echo "Full Demo Configuration"

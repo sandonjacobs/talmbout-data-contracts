@@ -45,7 +45,7 @@ class ConsumerCommand : CliktCommand() {
             KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to "true",
             AbstractKafkaSchemaSerDeConfig.LATEST_COMPATIBILITY_STRICT to true,
             AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION to false,
-            AbstractKafkaSchemaSerDeConfig.USE_LATEST_WITH_METADATA to "major_version=1"
+            AbstractKafkaSchemaSerDeConfig.USE_LATEST_WITH_METADATA to "major_version=2"
         )
 
         val membershipConsumer =

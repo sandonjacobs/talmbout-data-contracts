@@ -10,7 +10,7 @@ plugins {
 }
 
 application {
-    mainClass.set("io.confluent.devrel.dc.v1.MainKt")
+    mainClass.set("io.confluent.devrel.v2.MainKt")
 }
 
 sourceSets {
@@ -141,6 +141,7 @@ schemaRegistry {
         subject(inputSubject = "membership-avro-value", type = "AVRO", file = "${projectDir}/src/main/avro/membership_v2.avsc")
             .addReference("io.confluent.devrel.ValidityPeriod", "validity-period-value", -1)
             .setMetadata("${projectDir}/src/main/rules/membership_major_version_2.json")
+            .setRuleSet("${projectDir}/src/main/rules/membership_migration.json")
 
     }
 }
