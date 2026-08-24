@@ -41,17 +41,18 @@ kotlin {
 // The martinsjavacode avro-gradle-plugin parses each .avsc file with its own isolated
 // Schema.Parser, so it can never resolve a type defined in a sibling file (e.g.
 // membership_v2.avsc referencing io.confluent.devrel.ValidityPeriod from
-// validity_period.avsc). This task pre-resolves the real source files with a single
+// validity_period.avsc). This task pre-resolves the downloaded schema files with a single
 // shared Parser and writes out self-contained copies (referenced types inlined) that
-// the plugin can then parse in isolation without changing the on-disk source files,
-// which stay separate so they can still be registered/reused independently in the
-// Schema Registry.
-val avroSourceDir = layout.projectDirectory.dir("src/main/avro")
+// the plugin can then parse in isolation. Schemas are downloaded (rather than owned as
+// committed source here) from the `schemas` module's Schema Registry registration.
+val avroSourceDir = layout.buildDirectory.dir("downloaded-avro")
 val resolvedAvroDir = layout.buildDirectory.dir("resolved-avro")
 
 val resolveAvroSchemas by tasks.registering {
     group = "build"
     description = "Resolves cross-file Avro schema references into self-contained copies"
+
+    dependsOn("downloadSchemasTask")
 
     inputs.dir(avroSourceDir)
     outputs.dir(resolvedAvroDir)
@@ -61,7 +62,7 @@ val resolveAvroSchemas by tasks.registering {
         outputDir.deleteRecursively()
         outputDir.mkdirs()
 
-        var remaining = avroSourceDir.asFile.listFiles { file -> file.extension == "avsc" }?.toList()
+        var remaining: List<File> = avroSourceDir.get().asFile.listFiles { file -> file.extension == "avsc" }?.toList()
             ?: emptyList()
         val resolved = linkedMapOf<File, Schema>()
         val parser = Schema.Parser()
@@ -114,35 +115,19 @@ tasks.named("compileJava") {
 
 apply(from = "$rootDir/gradle/schema-registry-config.gradle.kts")
 
-val schemaRegOutputDir = "${project.projectDir.absolutePath}/build/schema-registry-plugin"
-
-tasks.registerSchemasTask {
-    dependsOn(resolveAvroSchemas)
-    doFirst {
-        mkdir(schemaRegOutputDir)
-    }
-}
-
 schemaRegistry {
     url = project.extra["srUrl"] as String
 
     @Suppress("UNCHECKED_CAST")
     clientConfig = project.extra["srClientConfig"] as Map<String, String>
 
-    outputDirectory = schemaRegOutputDir
     pretty = true
 
-    register {
-        // Registered first so it exists as its own subject/version before membership-avro-value
-        // below resolves a real reference to it (RegisterTaskAction registers subjects in the
-        // order they're declared here).
-        subject(inputSubject = "validity-period-value", type = "AVRO", file = "${projectDir}/src/main/avro/validity_period.avsc")
-
-        subject(inputSubject = "membership-avro-value", type = "AVRO", file = "${projectDir}/src/main/avro/membership_v2.avsc")
-            .addReference("io.confluent.devrel.ValidityPeriod", "validity-period-value", -1)
-            .setMetadata("${projectDir}/src/main/rules/membership_major_version_2.json")
-            .setRuleSet("${projectDir}/src/main/rules/membership_migration.json")
-
+    // Pinned to version 2 explicitly (not "latest"). downloadReferences also writes the
+    // referenced validity-period-value schema into the same output directory, so
+    // resolveAvroSchemas above can inline it for codegen.
+    download {
+        subject(inputSubject = "membership-avro-value", outputPath = "build/downloaded-avro", version = 2, downloadReferences = true)
     }
 }
 

@@ -36,7 +36,15 @@ kotlin {
 }
 
 avro {
-    sourceDir.set("src/main/avro")
+    sourceDir.set("build/downloaded-avro")
+}
+
+tasks.named("validateAvroSchemas") {
+    dependsOn("downloadSchemasTask")
+}
+
+tasks.named("generateAvroClasses") {
+    dependsOn("downloadSchemasTask")
 }
 
 tasks.named("compileKotlin") {
@@ -49,26 +57,18 @@ tasks.named("compileJava") {
 
 apply(from = "$rootDir/gradle/schema-registry-config.gradle.kts")
 
-val schemaRegOutputDir = "${project.projectDir.absolutePath}/build/schema-registry-plugin"
-
-tasks.registerSchemasTask {
-    doFirst {
-        mkdir(schemaRegOutputDir)
-    }
-}
-
 schemaRegistry {
     url = project.extra["srUrl"] as String
 
     @Suppress("UNCHECKED_CAST")
     clientConfig = project.extra["srClientConfig"] as Map<String, String>
 
-    outputDirectory = schemaRegOutputDir
     pretty = true
 
-    register {
-        subject(inputSubject = "membership-avro-value", type = "AVRO", file = "${projectDir}/src/main/avro/membership_v1.avsc")
-            .setMetadata("${projectDir}/src/main/rules/membership_major_version_1.json")
+    // Pinned to version 1 explicitly (not "latest") - once schemas:registerSchemasV2 has run,
+    // "latest" on this subject resolves to the v2 schema, which would be wrong for this module.
+    download {
+        subject(inputSubject = "membership-avro-value", outputPath = "${projectDir}/build/downloaded-avro", version = 1)
     }
 }
 

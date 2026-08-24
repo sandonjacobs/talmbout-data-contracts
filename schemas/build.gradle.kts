@@ -1,0 +1,59 @@
+import com.github.imflog.schema.registry.tasks.register.RegisterSchemasTask
+import com.github.imflog.schema.registry.tasks.register.RegisterSubjectExtension
+
+plugins {
+    alias(libs.plugins.schema.registry) apply true
+}
+
+apply(from = "$rootDir/gradle/schema-registry-config.gradle.kts")
+
+// Data architect/engineer domain: register each schema version, its metadata, and its migration
+// ruleset with Schema Registry. Two independent tasks (not one "register everything" task) so
+// each major version can be demoed/registered on its own. The imflog plugin's schemaRegistry{}
+// DSL only wires up a single fixed-name registerSchemasTask, so these instantiate its underlying
+// RegisterSubjectExtension/RegisterSchemasTask classes directly instead.
+
+val srUrl = project.extra["srUrl"] as String
+
+@Suppress("UNCHECKED_CAST")
+val srClientConfig = project.extra["srClientConfig"] as Map<String, String>
+
+val registerV1Subjects = RegisterSubjectExtension(project.objects).apply {
+    subject(inputSubject = "membership-avro-value", file = "$projectDir/src/main/avro/membership_v1.avsc", type = "AVRO")
+        .setMetadata("$projectDir/src/main/rules/membership_major_version_1.json")
+}
+
+tasks.register<RegisterSchemasTask>("registerSchemasV1") {
+    group = "registry"
+    description = "Register the v1 Membership schema (major_version=1) with Schema Registry"
+    url.set(srUrl)
+    clientConfig.set(srClientConfig)
+    subjects.set(registerV1Subjects.subjects)
+    outputDirectory.set("${projectDir}/schema-registry-plugin/v1")
+    rootDir.set(projectDir)
+    failFast.set(true)
+    doFirst { mkdir("${projectDir}/schema-registry-plugin/v1") }
+}
+
+val registerV2Subjects = RegisterSubjectExtension(project.objects).apply {
+    // Registered first so it exists as its own subject/version before membership-avro-value
+    // below resolves a real reference to it (RegisterTaskAction registers subjects in the
+    // order they're declared here).
+    subject(inputSubject = "validity-period-value", file = "$projectDir/src/main/avro/validity_period.avsc", type = "AVRO")
+
+    subject(inputSubject = "membership-avro-value", file = "$projectDir/src/main/avro/membership_v2.avsc", type = "AVRO")
+        .addReference("io.confluent.devrel.ValidityPeriod", "validity-period-value", -1)
+        .setMetadata("$projectDir/src/main/rules/membership_major_version_2.json")
+        .setRuleSet("$projectDir/src/main/rules/membership_migration.json")
+}
+
+tasks.register<RegisterSchemasTask>("registerSchemasV2") {
+    group = "registry"
+    description = "Register the v2 Membership + ValidityPeriod schemas (major_version=2) with the migration ruleset"
+    url.set(srUrl)
+    clientConfig.set(srClientConfig)
+    subjects.set(registerV2Subjects.subjects)
+    outputDirectory.set("${projectDir}/schema-registry-plugin/v2")
+    rootDir.set(projectDir)
+    doFirst { mkdir("${projectDir}/schema-registry-plugin/v2") }
+}

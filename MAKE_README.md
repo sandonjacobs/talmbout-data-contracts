@@ -109,7 +109,8 @@ Run `make help` to see all available commands. Key commands are organized by cat
 - `make test` - Run tests
 - `make register-schemas-v1` - Register v1 schemas with Schema Registry
 - `make register-schemas-v2` - Register v2 schemas with Schema Registry
-- `make download-schemas` - Download schemas from Schema Registry
+- `make download-schemas-v1` - Download the v1 schema for app-schema-v1
+- `make download-schemas-v2` - Download the v2 schema (+ references) for app-schema-v2
 
 ### Demo
 

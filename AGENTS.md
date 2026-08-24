@@ -21,15 +21,15 @@ The project demonstrates a multi-version schema evolution pattern:
 
 1. **Infrastructure Layer** (`cc-terraform/`): Terraform configurations provision Confluent Cloud resources (environment, Kafka cluster, Schema Registry with Stream Governance)
 
-2. **Schema Management** (`schemas/` - referenced but not present in current structure): Contains Avro schema definitions and migration rulesets
+2. **Schema Management** (`schemas/`): Owned by the data architect/engineer persona. Contains the Avro schema definitions, metadata, and migration rulesets for both major versions, and registers them with Schema Registry via two independent custom Gradle tasks (`registerSchemasV1`, `registerSchemasV2`) rather than one combined task — each version is registered (and demoed) on its own.
 
 3. **Shared Components** (`shared/`): Base classes for Kafka producers and consumers with common configuration handling
 
-4. **Application Versions**:
+4. **Application Versions** (developer persona; no longer own any `.avsc`/rules source — each downloads the specific registered version it builds against via the imflog plugin's `downloadSchemasTask`):
    - `app-schema-v1`: Producer and consumer using schema version 1 (with `start_date` and `end_date` fields)
-   - `app-schema-v2`: Consumer using schema version 2 (with `validity_period` nested structure)
+   - `app-schema-v2`: Producer and consumer using schema version 2 (with `validity_period` nested structure)
 
-The key architectural pattern is that `app-schema-v1` produces events using v1 schema, while `app-schema-v2` consumes the same events using v2 schema. Migration rules in Schema Registry handle the transformation automatically.
+The key architectural pattern is that `app-schema-v1` produces events using v1 schema, while `app-schema-v2` consumes the same events using v2 schema. Migration rules in Schema Registry handle the transformation automatically. Because both app modules' builds depend on `downloadSchemasTask`, `:schemas:registerSchemasV1`/`:schemas:registerSchemasV2` must be run at least once before `app-schema-v1`/`app-schema-v2` can build.
 
 ## Building and Running
 
@@ -78,11 +78,12 @@ The key architectural pattern is that `app-schema-v1` produces events using v1 s
 ./gradlew :app-schema-v1:build
 ./gradlew :shared:build
 
-# Generate Avro classes
+# Generate Avro classes (downloads the module's schema version first)
 ./gradlew :app-schema-v1:generateAvroClasses
 
-# Register schemas with Schema Registry
-./gradlew :app-schema-v1:registerSchemasTask
+# Register schemas with Schema Registry (run before building app-schema-v1/v2)
+./gradlew :schemas:registerSchemasV1
+./gradlew :schemas:registerSchemasV2
 ```
 
 ### Running Applications
@@ -116,17 +117,20 @@ Producer (in another terminal):
 
 ### Schema Registry Operations
 
-The project uses the `kafka-schema-registry-gradle-plugin` for schema management:
+The project uses the `kafka-schema-registry-gradle-plugin` (imflog) for schema management. Registration lives
+in `schemas` (architect/engineer side); download lives in each `app-schema-v*` module (developer side):
 
 ```bash
-# Register schemas (with Confluent Cloud)
-./gradlew :app-schema-v1:registerSchemasTask
+# Register schemas (with Confluent Cloud) - one task per major version, run independently
+./gradlew :schemas:registerSchemasV1
+./gradlew :schemas:registerSchemasV2
 
 # Register schemas (with local Schema Registry)
-./gradlew :app-schema-v1:registerSchemasTask -PschemaRegistryConfig=local.properties
+./gradlew :schemas:registerSchemasV1 -PschemaRegistryConfig=local.properties
 
-# Download schemas
+# Download the schema a given app module builds against (pinned to that module's version)
 ./gradlew :app-schema-v1:downloadSchemasTask
+./gradlew :app-schema-v2:downloadSchemasTask
 ```
 
 ### Teardown
@@ -204,26 +208,29 @@ To run against local Kafka/Schema Registry instead of Confluent Cloud:
 - `setup.sh`: Automated setup script for Confluent Cloud and Gradle builds
 - `cc-terraform/*.tf`: Infrastructure as Code for Confluent Cloud resources
 - `shared/src/main/kotlin/.../Base*.kt`: Reusable Kafka client abstractions
-- `app-schema-v*/src/main/avro/*.avsc`: Avro schema definitions
-- `app-schema-v*/src/main/rules/*.json`: Schema Registry migration rules
+- `schemas/src/main/avro/*.avsc`: Avro schema definitions (all versions)
+- `schemas/src/main/rules/*.json`: Schema Registry metadata and migration rules (all versions)
+- `app-schema-v*/build/downloaded-avro/*.avsc`: schemas downloaded at build time by `downloadSchemasTask`; not committed source
 
 ## Common Tasks
 
 ### Adding a New Schema Version
 
-1. Create new module (e.g., `app-schema-v3`)
-2. Add Avro schema in `src/main/avro/`
-3. Configure `build.gradle.kts` with schema registry plugin
-4. Define migration rules in `src/main/rules/`
+1. Add the new Avro schema (and any newly-referenced schemas) under `schemas/src/main/avro/`
+2. Add its metadata/migration-rule JSON under `schemas/src/main/rules/`
+3. Add a new custom task in `schemas/build.gradle.kts` (e.g. `registerSchemasV3`), following the
+   `registerSchemasV1`/`registerSchemasV2` pattern
+4. Create the new app module (e.g., `app-schema-v3`), configured to `download` that version's
+   subject via the `schemaRegistry { download { ... } }` block, pinned to the new version number
 5. Implement producer/consumer using shared base classes
-6. Update `settings.gradle.kts` to include new module
+6. Update `settings.gradle.kts` to include the new module
 
 ### Modifying Existing Schema
 
-1. Update `.avsc` file in `src/main/avro/`
-2. Update or create migration rules in `src/main/rules/`
-3. Re-register schema: `./gradlew :module:registerSchemasTask`
-4. Regenerate classes: `./gradlew :module:generateAvroClasses`
+1. Update the `.avsc` file in `schemas/src/main/avro/`
+2. Update or create migration rules in `schemas/src/main/rules/`
+3. Re-register the schema: `./gradlew :schemas:registerSchemasV1` (or `V2`)
+4. Re-download and regenerate classes in the consuming app module: `./gradlew :module:generateAvroClasses`
 5. Update application code as needed
 
 ### Debugging Schema Issues

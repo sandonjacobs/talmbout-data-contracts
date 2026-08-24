@@ -12,8 +12,8 @@ developer tools and practices to his work in this area, which can be found [here
 
 In the workflow above, we see these tools in action:
 * The [Confluent Terraform Provider](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs) is used to define Confluent Cloud assets (Kafka cluster(s), Data Governance, Kafka Topics, and Schema Configurations).
-* Using the newly created Schema Registry, data engineers and architects define the schema of the events that comprise the organization's canonical data model - i.e. entities, events, and commands that are shared across applications. - along with other parts of the data contract. This includes data quality rules, metadata, and migration rules. A gradle plugin is utilized to register the schemas and related elements of the data contract with the Schema Registry.
-* Applications which producer and/or consume these event types can download the schemas from the Schema Registry. In our example, this is a JVM application built using Gradle. A gradle plugin is used to download the schemas, after which another gradle plugin is used to generate Java classes from those schemas - thus providing the application with compile-time type safety.
+* Using the newly created Schema Registry, data engineers and architects define the schema of the events that comprise the organization's canonical data model - i.e. entities, events, and commands that are shared across applications. - along with other parts of the data contract. This includes data quality rules, metadata, and migration rules. This is the `schemas` Gradle module: it owns the Avro schemas and rules for every major version, and registers each version with Schema Registry via its own independent Gradle task (`registerSchemasV1`, `registerSchemasV2`) rather than one task that registers everything at once - so each version's registration can be demoed on its own.
+* Applications which produce and/or consume these event types (`app-schema-v1`, `app-schema-v2`) don't own any schema source themselves. Each downloads the specific version it builds against from Schema Registry using the same gradle plugin's `download` task, after which another gradle plugin generates Java classes from the downloaded schema - thus providing the application with compile-time type safety. This mirrors a real CI/CD relationship: the `schemas` module is the architects'/engineers' side of the contract, and the `app-schema-v*` modules are independent developer teams consuming whichever published version they target.
 
 ### Prerequisites
 
@@ -104,10 +104,21 @@ whichever properties file you point them at. To run against a self-hosted Kafka 
 [local.properties.orig](shared/src/main/resources/.local.properties.template) to `shared/src/main/resources/local.properties`, fill in your stack's
 `bootstrap.servers`/`schema.registry.url` (a local registry typically needs no `basic.auth.*` credentials), then:
 
-- Gradle schema register/download tasks: pass `-PschemaRegistryConfig=local.properties`, e.g. `./gradlew :schemas:registerSchemasTask -PschemaRegistryConfig=local.properties`.
+- Gradle schema register/download tasks: pass `-PschemaRegistryConfig=local.properties`, e.g. `./gradlew :schemas:registerSchemasV1 -PschemaRegistryConfig=local.properties`.
 - The `app-schema-v1` producer/consumer: pass `-p /local.properties` on the command line.
 
 Omitting these flags keeps the default behavior of using `confluent.properties` (Confluent Cloud).
+
+### Register the Schemas
+
+Before building or running either app module, register the version(s) it needs with Schema Registry - each is its own independent Gradle task, run from the `schemas` module:
+
+```shell
+./gradlew :schemas:registerSchemasV1
+./gradlew :schemas:registerSchemasV2
+```
+
+`app-schema-v1`/`app-schema-v2` builds depend on downloading their schema (`downloadSchemasTask`), so registration must happen at least once before `./gradlew :app-schema-v1:build` or `:app-schema-v2:build` will succeed.
 
 ### Run the Examples
 
