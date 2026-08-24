@@ -3,11 +3,7 @@
 
 .PHONY: setup-cloud check-cloud-credentials terraform-init terraform-plan terraform-apply terraform-destroy export-cloud-config teardown-cloud
 
-setup-cloud: check-deployment-type check-cloud-credentials ## Setup Confluent Cloud environment
-	@if [ "$(DEPLOYMENT_TYPE)" != "cloud" ]; then \
-		echo "❌ Not configured for Confluent Cloud. Current: $(DEPLOYMENT_TYPE)"; \
-		exit 1; \
-	fi
+setup-cloud: check-cloud-credentials ## Setup Confluent Cloud environment
 	@echo "Setting up Confluent Cloud Environment..."
 	@echo "=========================================="
 	@echo ""

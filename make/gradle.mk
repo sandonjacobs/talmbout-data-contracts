@@ -14,25 +14,13 @@ build-v2: ## Build app-schema-v2 module
 	@echo "✓ app-schema-v2 built"
 
 register-schemas-v1: ## Register v1 schemas with Schema Registry
-	@echo "Registering v1 schemas with Schema Registry..."
-	@if [ "$(DEPLOYMENT_TYPE)" = "local" ]; then \
-		echo "Using local Schema Registry configuration..."; \
-		./gradlew :app-schema-v1:registerSchemasTask -PschemaRegistryConfig=local.properties; \
-	else \
-		echo "Using Confluent Cloud Schema Registry..."; \
-		./gradlew :app-schema-v1:registerSchemasTask; \
-	fi
+	@echo "Registering v1 schemas with Confluent Cloud Schema Registry..."
+	@./gradlew :app-schema-v1:registerSchemasTask
 	@echo "✓ v1 schemas registered"
 
 register-schemas-v2: ## Register v2 schemas with Schema Registry
-	@echo "Registering v2 schemas with Schema Registry..."
-	@if [ "$(DEPLOYMENT_TYPE)" = "local" ]; then \
-		echo "Using local Schema Registry configuration..."; \
-		./gradlew :app-schema-v2:registerSchemasTask -PschemaRegistryConfig=local.properties; \
-	else \
-		echo "Using Confluent Cloud Schema Registry..."; \
-		./gradlew :app-schema-v2:registerSchemasTask; \
-	fi
+	@echo "Registering v2 schemas with Confluent Cloud Schema Registry..."
+	@./gradlew :app-schema-v2:registerSchemasTask
 	@echo "✓ v2 schemas registered"
 
 clean-build: ## Clean all build artifacts

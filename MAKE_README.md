@@ -1,6 +1,6 @@
 # Makefile Documentation
 
-This project uses a modular Makefile system to orchestrate demo tasks for both local container and Confluent Cloud deployments.
+This project uses a modular Makefile system to orchestrate demo tasks against Confluent Cloud.
 
 ## Quick Start
 
@@ -10,14 +10,10 @@ This project uses a modular Makefile system to orchestrate demo tasks for both l
 make init
 ```
 
-This interactive command will:
-- Prompt you to choose between Confluent Cloud or local containers
-- For local: Ask whether to use Docker or Podman
-- Create a `.env` file with your configuration
+This shows the prerequisites and next steps for setting up Confluent Cloud.
 
 ### 2. Setup Your Environment
 
-**For Confluent Cloud:**
 ```bash
 # Set your credentials
 export CONFLUENT_CLOUD_API_KEY=<your-key>
@@ -26,12 +22,6 @@ export TF_VAR_org_id=$(confluent organization list -o json | jq -c -r '.[] | sel
 
 # Setup infrastructure
 make setup-cloud
-```
-
-**For Local Containers:**
-```bash
-# Setup local Kafka and Schema Registry
-make setup-local
 ```
 
 ### 3. Build the Project
@@ -84,9 +74,8 @@ The Makefile system is organized into modular files:
 ```
 Makefile                    # Main entry point with help
 make/
-├── init.mk                 # Initialization and environment selection
+├── init.mk                 # Initialization
 ├── confluent-cloud.mk      # Confluent Cloud setup and teardown
-├── local.mk                # Local container management
 ├── gradle.mk               # Gradle build tasks
 └── demo.mk                 # Demo orchestration
 ```
@@ -97,7 +86,7 @@ Run `make help` to see all available commands. Key commands are organized by cat
 
 ### Initialization
 
-- `make init` - Initialize project (prompts for deployment type)
+- `make init` - Show prerequisites and next steps for Confluent Cloud setup
 - `make clean-env` - Remove .env configuration file
 
 ### Confluent Cloud
@@ -111,16 +100,6 @@ Run `make help` to see all available commands. Key commands are organized by cat
 - `make cloud-status` - Show resource status
 - `make cloud-output` - Show Terraform outputs
 - `make teardown-cloud` - Destroy all cloud resources
-
-### Local Containers
-
-- `make setup-local` - Setup local Kafka and Schema Registry
-- `make start-local` - Start containers
-- `make stop-local` - Stop containers
-- `make restart-local` - Restart containers
-- `make logs-local` - Show container logs
-- `make local-status` - Show container status
-- `make teardown-local` - Remove containers and volumes
 
 ### Gradle Build
 
@@ -144,18 +123,6 @@ Run `make help` to see all available commands. Key commands are organized by cat
 - `make demo-status` - Show topics and consumer groups
 
 ## Configuration
-
-### Environment Variables
-
-Configuration is managed through a `.env` file (created by `make init`):
-
-```bash
-# Deployment type: cloud or local
-DEPLOYMENT_TYPE=cloud
-
-# Container runtime (for local only): docker or podman
-CONTAINER_RUNTIME=docker
-```
 
 ### Confluent Cloud Credentials
 
@@ -193,27 +160,6 @@ make demo-producer-v1 PRODUCER_INTERVAL=2 PRODUCER_DURATION=60
 
 ## Workflows
 
-### Complete Local Setup Workflow
-
-```bash
-# 1. Initialize
-make init
-# Choose: Local containers → Docker (or Podman)
-
-# 2. Setup local environment
-make setup-local
-
-# 3. Build project
-make build-v1
-
-# 4. Register schemas
-make register-schemas-v1
-
-# 5. Run demo (in separate terminals)
-make demo-consumer-v1    # Terminal 1
-make demo-producer-v1    # Terminal 2
-```
-
 ### Complete Confluent Cloud Workflow
 
 ```bash
@@ -224,7 +170,6 @@ export TF_VAR_org_id=$(confluent organization list -o json | jq -c -r '.[] | sel
 
 # 2. Initialize
 make init
-# Choose: Confluent Cloud
 
 # 3. Setup cloud infrastructure
 make setup-cloud
@@ -259,14 +204,6 @@ Watch how the v2 consumer automatically transforms v1 events using migration rul
 
 ## Teardown
 
-### Local Environment
-
-```bash
-make teardown-local
-```
-
-This removes all containers and volumes.
-
 ### Confluent Cloud
 
 ```bash
@@ -286,9 +223,6 @@ cat .env
 # Check cloud credentials
 make check-cloud-credentials
 
-# Check local container status
-make local-status
-
 # Check cloud resource status
 make cloud-status
 ```
@@ -304,26 +238,17 @@ make init
 ### View Logs
 
 ```bash
-# Local containers
-make logs-local
-
 # Demo status
 make demo-status
 ```
 
 ### Common Issues
 
-**"DEPLOYMENT_TYPE not set"**
-- Run `make init` to create `.env` file
-
 **"CONFLUENT_CLOUD_API_KEY not set"**
 - Export your Confluent Cloud credentials before running `make setup-cloud`
 
-**"docker-compose not found"**
-- Install Docker or Podman and docker-compose/podman-compose
-
 **Schema registration fails**
-- Ensure Schema Registry is running (`make local-status` or `make cloud-status`)
+- Ensure Schema Registry is available (`make cloud-status`)
 - Check connection properties in `shared/src/main/resources/confluent.properties`
 
 ## Additional Resources

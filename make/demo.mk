@@ -87,35 +87,14 @@ demo-full: ## Show all demo parameters
 	@echo ""
 
 demo-reset: ## Reset consumer group offsets
-	@echo "⚠️  WARNING: This will reset consumer group offsets!"
-	@read -p "Are you sure? [y/N]: " confirm; \
-	if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
-		if [ "$(DEPLOYMENT_TYPE)" = "local" ]; then \
-			echo "Resetting local consumer groups..."; \
-			docker exec broker kafka-consumer-groups --bootstrap-server localhost:9092 --delete --group $(CONSUMER_GROUP_V1) || true; \
-			docker exec broker kafka-consumer-groups --bootstrap-server localhost:9092 --delete --group $(CONSUMER_GROUP_V2) || true; \
-		else \
-			echo "For Confluent Cloud, use the Confluent CLI or Cloud Console to reset consumer groups."; \
-			echo "  confluent kafka consumer-group delete $(CONSUMER_GROUP_V1)"; \
-			echo "  confluent kafka consumer-group delete $(CONSUMER_GROUP_V2)"; \
-		fi; \
-		echo "✓ Consumer groups reset"; \
-	else \
-		echo "Cancelled."; \
-	fi
+	@echo "Use the Confluent CLI or Cloud Console to reset consumer groups."
+	@echo "  confluent kafka consumer-group delete $(CONSUMER_GROUP_V1)"
+	@echo "  confluent kafka consumer-group delete $(CONSUMER_GROUP_V2)"
 
 demo-status: ## Show topics and consumer groups
 	@echo "Demo Status"
 	@echo "==========="
 	@echo ""
-	@if [ "$(DEPLOYMENT_TYPE)" = "local" ]; then \
-		echo "Topics:"; \
-		docker exec broker kafka-topics --bootstrap-server localhost:9092 --list | grep membership || echo "No membership topics found"; \
-		echo ""; \
-		echo "Consumer Groups:"; \
-		docker exec broker kafka-consumer-groups --bootstrap-server localhost:9092 --list | grep membership || echo "No membership consumer groups found"; \
-	else \
-		echo "Use Confluent Cloud Console or CLI to view topics and consumer groups."; \
-		echo "  confluent kafka topic list"; \
-		echo "  confluent kafka consumer-group list"; \
-	fi
+	@echo "Use Confluent Cloud Console or CLI to view topics and consumer groups."
+	@echo "  confluent kafka topic list"
+	@echo "  confluent kafka consumer-group list"
