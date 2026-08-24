@@ -1,7 +1,7 @@
 # Gradle Build Tasks
 # ==================
 
-.PHONY: build-v1 build-v2 register-schemas-v1 register-schemas-v2 download-schemas-v1 download-schemas-v2 clean-build test gradle-wrapper
+.PHONY: build-v1 build-v2 register-schemas-v1 register-schemas-v2 download-schemas-v1 download-schemas-v2 bootstrap-v1 bootstrap-v2 clean-build test gradle-wrapper
 
 build-v1: ## Build app-schema-v1 module
 	@echo "Building app-schema-v1 module..."
@@ -32,6 +32,12 @@ download-schemas-v2: ## Download the v2 schema (+ references) for app-schema-v2
 	@echo "Downloading v2 schema for app-schema-v2..."
 	@./gradlew :app-schema-v2:downloadSchemasTask
 	@echo "✓ v2 schema downloaded"
+
+bootstrap-v1: register-schemas-v1 build-v1 ## Register + build app-schema-v1 in one step (build downloads the schema automatically)
+	@echo "✓ app-schema-v1 ready to run"
+
+bootstrap-v2: register-schemas-v2 build-v2 ## Register + build app-schema-v2 in one step (build downloads the schema automatically)
+	@echo "✓ app-schema-v2 ready to run"
 
 clean-build: ## Clean all build artifacts
 	@echo "Cleaning build artifacts..."

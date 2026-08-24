@@ -15,9 +15,8 @@ setup-cloud: check-cloud-credentials ## Setup Confluent Cloud environment
 	@echo "✓ Confluent Cloud setup complete!"
 	@echo ""
 	@echo "Next steps:"
-	@echo "  1. Build the project: make build-v1"
-	@echo "  2. Register v1 schemas: make register-schemas-v1"
-	@echo "  3. Run the demo: make demo-v1"
+	@echo "  1. Register + build v1: make bootstrap-v1"
+	@echo "  2. Run the demo: make demo-v1"
 
 check-cloud-credentials:
 	@echo "Checking Confluent Cloud credentials..."
