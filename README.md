@@ -17,11 +17,11 @@ In the workflow above, we see these tools in action:
 
 ### Prerequisites
 
-Clone the `confluentinc/demo-scene` GitHub repository (if you haven't already) and navigate to the `demo-scene` directory:
+Clone this repository and `cd` into it:
 
 ```shell
-git clone git@github.com:confluentinc/demo-scene.git
-cd demo-scene
+git clone <this-repo-url>
+cd data-contracts
 ```
 
 Here are the tools needed to run this tutorial:
@@ -29,9 +29,11 @@ Here are the tools needed to run this tutorial:
 * [Confluent CLI](https://docs.confluent.io/confluent-cli/current/install.html)
 * [Terraform](https://developer.hashicorp.com/terraform/install?product_intent=terraform)
 * [jq](https://jqlang.github.io/jq/)
-* [Gradle](https://gradle.org/install/) (version 8.5 or higher)
-* JDK 17
+* GNU Make (all of the steps below are run through the `Makefile` - see [MAKE_README.md](MAKE_README.md) for every available command)
+* JDK 21
 * IDE of choice
+
+> The `./gradlew` wrapper is committed, so a separate Gradle install isn't required.
 
 > When installing and configuring the Confluent CLI, include the Confluent Cloud credentials as environment variables for future use. For instance with bash or zsh, include these export statements:
 > 
@@ -54,29 +56,15 @@ export TF_VAR_org_id=$(confluent organization list -o json | jq -c -r '.[] | sel
 
 ### Create Assets in Confluent Cloud
 
-From the root of `rules`, run the provided setup script - `setup.sh`. You may need to edit permissions to make this file executable.
-
-Because this script is provisioning multiple assets in Confluent Cloud and downloading the appropriate gradle-wrapper JAR files for each module,
-it may take a few minutes to complete.
+From the root of this repository, run:
 
 ```shell
-chmod +x setup.sh
-./setup.sh
-Setup Confluent Cloud and all Gradle Builds for Demo
--------------------------------------
-Initializing Confluent Cloud Environment...
-......
-......
-......
-......
-BUILD SUCCESSFUL in 2s
-6 actionable tasks: 6 executed
-Watched directory hierarchies: [/Users/sjacobs/code/confluentinc/demo-scene/data-contracts]
-Code Generation Complete
--------------------------------------
-
-Setup Complete!
+make setup-cloud
 ```
+
+This provisions the Confluent Cloud environment, Kafka cluster, and Schema Registry via Terraform, then writes
+`shared/src/main/resources/confluent.properties` with the connection details your Kafka clients need. Because it's
+provisioning real cloud resources, it may take a few minutes to complete.
 
 Let's have a look at what we've created in Confluent Cloud, we find a new Environment:
 
@@ -109,28 +97,31 @@ whichever properties file you point them at. To run against a self-hosted Kafka 
 
 Omitting these flags keeps the default behavior of using `confluent.properties` (Confluent Cloud).
 
-### Register the Schemas
+### Register + Build Schema v1
 
-Before building or running either app module, register the version(s) it needs with Schema Registry - each is its own independent Gradle task, run from the `schemas` module:
-
-```shell
-./gradlew :schemas:registerSchemasV1
-./gradlew :schemas:registerSchemasV2
-```
-
-`app-schema-v1`/`app-schema-v2` builds depend on downloading their schema (`downloadSchemasTask`), so registration must happen at least once before `./gradlew :app-schema-v1:build` or `:app-schema-v2:build` will succeed.
-
-### Run the Examples
-
-The `app-schema-v1` application provides separate commands for running a consumer or producer independently, making it ideal for conference demos where you want to show them in separate terminal windows.
-
-**Start a Consumer** (in one terminal):
+Before running `app-schema-v1`, its schema needs to be registered with Schema Registry and the module built. One
+command does both (registration first, since the build downloads whatever is currently registered):
 
 ```shell
-./gradlew :app-schema-v1:run --args="consumer"
+make bootstrap-v1
 ```
 
-The consumer subscribes to the `membership-avro` topic and displays events using version 1 of the membership schema:
+Under the hood this runs `make register-schemas-v1` (registers `membership_v1.avsc` + its metadata from the
+`schemas` module) followed by `make build-v1` (which downloads the registered v1 schema and compiles
+`app-schema-v1` against it).
+
+### Run the v1 Demo
+
+`app-schema-v1` has separate commands for running a consumer or a producer independently - ideal for a conference
+demo where you want them in separate terminal windows.
+
+**Terminal 1 - Consumer:**
+
+```shell
+make demo-consumer-v1
+```
+
+This subscribes to the `membership-avro` topic and displays events using version 1 of the membership schema:
 
 ```shell
 *** Starting Consumer using Schema v1!!!
@@ -138,50 +129,77 @@ The consumer subscribes to the `membership-avro` topic and displays events using
 [Thread-0] INFO io.confluent.devrel.datacontracts.shared.BaseConsumer - Received Membership 940cf6fa-eb12-46af-87e8-5a9bc33df119, {"user_id": "940cf6fa-eb12-46af-87e8-5a9bc33df119", "start_date": "2023-05-23", "end_date": "2025-07-02"}
 ```
 
-**Start a Producer** (in another terminal):
+**Terminal 2 - Producer:**
 
 ```shell
-./gradlew :app-schema-v1:run --args="producer"
+make demo-producer-v1
 ```
 
-By default, the producer generates and sends one event per second for 10 seconds. You can customize this:
+By default, the producer sends one event per second for 10 seconds. Override either with make variables:
 
 ```shell
 # Produce events every 2 seconds for 60 seconds
-./gradlew :app-schema-v1:run --args="producer -i 2 -d 60"
+make demo-producer-v1 PRODUCER_INTERVAL_MS=2000 PRODUCER_DURATION=60
 ```
 
-**Available Options:**
+> Every `make demo-consumer-*`/`make demo-producer-*` run first checks that `confluent.properties` exists (from
+> `make setup-cloud`) and fails fast with a clear message if it's missing, instead of a raw stack trace.
+> Consumer group ids also get a unique per-run suffix, so re-running a consumer always starts fresh from the
+> earliest offset - see `make demo-full` for all overridable parameters.
 
-For both consumer and producer:
-- `-p, --config-path`: Path to properties file (default: `/confluent.properties`)
-- `-c, --client-id`: Kafka client ID (default: `schema-v1`)
+### Evolve the Schema: v1 → v2
 
-Consumer-specific:
-- `-g, --group-id`: Consumer group ID (default: `schema-v1`)
+Now provision and build schema v2, which restructures the flat `start_date`/`end_date` fields into a nested
+`validity_period { from, to }` record - a change that is **not** backward compatible under standard Avro rules.
+Schema Registry's migration rules (registered as part of v2, see `schemas/src/main/rules/membership_migration.json`)
+are what let a v2 consumer transform v1 events on the fly:
 
-Producer-specific:
-- `-i, --interval`: Interval between events in seconds (default: `1`)
-- `-d, --duration`: How long to produce events in seconds (default: `10`)
+```shell
+make bootstrap-v2
+```
 
-The `app-schema-v2` module's `main` function starts a consumer subscribed to the `membership-avro` topic. But this time, events will be consumed using
-version 2 of the membership schema. Notice the `Map` of consumer overrides in the constructor of the `MembershipConsumer` in that module. As such, those
-same events which `app-schema-v1` produced using `major_version=1` of the schema are consumed using `major_version=2`:
+Open three terminals to see the evolution in action - a v1 consumer for comparison, a v2 consumer that will
+transparently migrate incoming v1 events, and a v1 producer that has no idea v2 even exists:
+
+**Terminal 1 - v1 Consumer (for comparison):**
+
+```shell
+make demo-consumer-v1
+```
+
+**Terminal 2 - v2 Consumer (shows migration):**
+
+```shell
+make demo-consumer-v2
+```
+
+**Terminal 3 - Producer (still producing v1 events):**
+
+```shell
+make demo-producer-v1
+```
+
+The v2 consumer receives the same events the v1 producer sent using `major_version=1`, but transforms them to the
+v2 shape automatically via the migration rule:
 
 ```shell
 [Thread-0] INFO io.confluent.devrel.datacontracts.shared.BaseConsumer - v2 - Received Membership b0e34c68-208c-4771-be19-79689fc9ad28, {"user_id": "b0e34c68-208c-4771-be19-79689fc9ad28", "validity_period": {"from": "2022-11-06", "to": "2025-09-03"}}
 [Thread-0] INFO io.confluent.devrel.datacontracts.shared.BaseConsumer - v2 - Received Membership 517f8c7e-4ae5-47ea-93a2-c1f00669d330, {"user_id": "517f8c7e-4ae5-47ea-93a2-c1f00669d330", "validity_period": {"from": "2023-01-29", "to": "2025-02-19"}}
 ```
 
-This illustrates how the use of migration rules allows producers and consumers to independently make any code and configuration changes needed to accommodate schema changes.
+This illustrates how migration rules let producers and consumers each evolve their code and configuration on
+their own schedule, without coordinating a synchronized cutover.
+
+You can also run `make demo-producer-v2` in a fourth terminal to show v2-native events flowing alongside v1 ones,
+consumed correctly by both the v1 and v2 consumers.
 
 ## Teardown
 
-When you're done with the demo, issue this command from the `cc-terraform` directory to destroy the Confluent Cloud environment
-we created:
+When you're done with the demo, destroy the Confluent Cloud environment:
 
 ```shell
-terraform destroy -auto-approve
+make teardown-cloud
 ```
 
-Check the Confluent Cloud console to ensure this environment no longer exists.
+This prompts for confirmation before running `terraform destroy`. Check the Confluent Cloud console afterward to
+confirm the environment no longer exists.

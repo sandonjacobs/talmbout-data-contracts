@@ -110,9 +110,10 @@ Producer (in another terminal):
 ./gradlew :app-schema-v1:run --args="producer -p /local.properties"
 ```
 
-**Schema v2 Application** (Consumer only):
+**Schema v2 Application** - same `consumer`/`producer` subcommands as v1:
 ```bash
-./gradlew :app-schema-v2:run
+./gradlew :app-schema-v2:run --args="consumer"
+./gradlew :app-schema-v2:run --args="producer"
 ```
 
 ### Schema Registry Operations
@@ -168,7 +169,7 @@ Applications use **Clikt** library for CLI argument parsing with these common op
 - `-p, --config-path`: Path to properties file (default: `/confluent.properties`)
 - `-c, --client-id`: Kafka client ID
 - `-g, --group-id`: Consumer group ID
-- `-i, --interval`: Producer interval in seconds
+- `-i, --interval`: Producer interval in milliseconds
 - `-d, --duration`: Producer duration in seconds
 
 ### Testing

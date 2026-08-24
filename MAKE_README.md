@@ -24,19 +24,17 @@ export TF_VAR_org_id=$(confluent organization list -o json | jq -c -r '.[] | sel
 make setup-cloud
 ```
 
-### 3. Build the Project
+### 3. Register + Build Schema v1
 
 ```bash
-make build-v1
+make bootstrap-v1
 ```
 
-### 4. Register Schemas
+This registers the v1 schema with Schema Registry, then builds `app-schema-v1` (which downloads the
+schema it just registered). Use `make bootstrap-v2` the same way when you're ready to demo the v1 → v2
+evolution.
 
-```bash
-make register-schemas-v1
-```
-
-### 5. Run the Demo
+### 4. Run the Demo
 
 **Schema v1 Demo** (open two terminals):
 
@@ -111,12 +109,16 @@ Run `make help` to see all available commands. Key commands are organized by cat
 - `make register-schemas-v2` - Register v2 schemas with Schema Registry
 - `make download-schemas-v1` - Download the v1 schema for app-schema-v1
 - `make download-schemas-v2` - Download the v2 schema (+ references) for app-schema-v2
+- `make bootstrap-v1` - Register + build app-schema-v1 in one step
+- `make bootstrap-v2` - Register + build app-schema-v2 in one step
 
 ### Demo
 
 - `make demo-v1` - Show instructions for v1 demo
 - `make demo-v2` - Show instructions for v2 evolution demo
+- `make check-demo-ready` - Verify `confluent.properties` exists before running a producer/consumer (runs automatically as a dependency of every `demo-producer-*`/`demo-consumer-*` target)
 - `make demo-producer-v1` - Run v1 producer
+- `make demo-producer-v2` - Run v2 producer
 - `make demo-consumer-v1` - Run v1 consumer
 - `make demo-consumer-v2` - Run v2 consumer (with migration)
 - `make demo-full` - Show all demo parameters
@@ -143,12 +145,14 @@ Customize demo behavior with environment variables:
 
 ```bash
 # Producer settings
-PRODUCER_INTERVAL=1        # Seconds between events (default: 1)
-PRODUCER_DURATION=10       # How long to produce (default: 10)
+PRODUCER_INTERVAL_MS=1000  # Milliseconds between events (default: 1000)
+PRODUCER_DURATION=10       # How long to produce, in seconds (default: 10)
 
-# Consumer settings
-CONSUMER_GROUP_V1=membership-consumer-v1
-CONSUMER_GROUP_V2=membership-consumer-v2
+# Consumer settings - each defaults to a name suffixed with DEMO_RUN_ID (a timestamp),
+# so every run starts fresh from the earliest offset instead of resuming a prior run
+DEMO_RUN_ID=<unix-timestamp>
+CONSUMER_GROUP_V1=membership-consumer-v1-<run-id>
+CONSUMER_GROUP_V2=membership-consumer-v2-<run-id>
 
 # Configuration file path
 CONFIG_PATH=/confluent.properties
@@ -156,7 +160,7 @@ CONFIG_PATH=/confluent.properties
 
 Example:
 ```bash
-make demo-producer-v1 PRODUCER_INTERVAL=2 PRODUCER_DURATION=60
+make demo-producer-v1 PRODUCER_INTERVAL_MS=2000 PRODUCER_DURATION=60
 ```
 
 ## Workflows
@@ -175,13 +179,10 @@ make init
 # 3. Setup cloud infrastructure
 make setup-cloud
 
-# 4. Build project
-make build-v1
+# 4. Register + build schema v1
+make bootstrap-v1
 
-# 5. Register schemas
-make register-schemas-v1
-
-# 6. Run demo (in separate terminals)
+# 5. Run demo (in separate terminals)
 make demo-consumer-v1    # Terminal 1
 make demo-producer-v1    # Terminal 2
 ```
@@ -189,7 +190,8 @@ make demo-producer-v1    # Terminal 2
 ### Schema Evolution Demo Workflow
 
 ```bash
-# After completing setup above...
+# After completing setup above, register + build schema v2 as well:
+make bootstrap-v2
 
 # Terminal 1: v1 consumer (for comparison)
 make demo-consumer-v1
@@ -247,6 +249,9 @@ make demo-status
 
 **"CONFLUENT_CLOUD_API_KEY not set"**
 - Export your Confluent Cloud credentials before running `make setup-cloud`
+
+**"confluent.properties not found" when starting a producer/consumer**
+- Run `make setup-cloud` first - this is `check-demo-ready` catching a missing config file before Gradle would fail with a less obvious error
 
 **Schema registration fails**
 - Ensure Schema Registry is available (`make cloud-status`)
