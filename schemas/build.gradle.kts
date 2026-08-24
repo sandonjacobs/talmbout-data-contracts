@@ -55,5 +55,6 @@ tasks.register<RegisterSchemasTask>("registerSchemasV2") {
     subjects.set(registerV2Subjects.subjects)
     outputDirectory.set("${projectDir}/schema-registry-plugin/v2")
     rootDir.set(projectDir)
+    failFast.set(true)
     doFirst { mkdir("${projectDir}/schema-registry-plugin/v2") }
 }

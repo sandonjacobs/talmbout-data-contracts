@@ -1,5 +1,5 @@
+import org.apache.avro.AvroRuntimeException
 import org.apache.avro.Schema
-import org.apache.avro.SchemaParseException
 
 plugins {
     kotlin("jvm") apply true
@@ -74,7 +74,11 @@ val resolveAvroSchemas by tasks.registering {
                 try {
                     resolved[file] = parser.parse(file)
                     progressed = true
-                } catch (e: SchemaParseException) {
+                } catch (e: AvroRuntimeException) {
+                    // Avro 1.12 eagerly resolves cross-type references at the end of each
+                    // parse(File) call: parsing a file before its dependency is registered on
+                    // the shared parser throws AvroTypeException ("Undefined schema: ..."),
+                    // not SchemaParseException, even though it's the same self-ordering problem.
                     stillPending.add(file)
                 }
             }
@@ -127,7 +131,7 @@ schemaRegistry {
     // referenced validity-period-value schema into the same output directory, so
     // resolveAvroSchemas above can inline it for codegen.
     download {
-        subject(inputSubject = "membership-avro-value", outputPath = "build/downloaded-avro", version = 2, downloadReferences = true)
+        subject(inputSubject = "membership-avro-value", outputPath = "${projectDir}/build/downloaded-avro", version = 2, downloadReferences = true)
     }
 }
 

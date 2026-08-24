@@ -68,6 +68,7 @@ class ConsumerCommand : RootCommand() {
             ConsumerConfig.GROUP_ID_CONFIG to groupId,
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to "org.apache.kafka.common.serialization.StringDeserializer",
             ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to "io.confluent.kafka.serializers.KafkaAvroDeserializer",
+            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "earliest",
             KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to "true",
             AbstractKafkaSchemaSerDeConfig.LATEST_COMPATIBILITY_STRICT to true,
             AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION to false,
