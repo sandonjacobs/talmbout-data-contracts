@@ -6,14 +6,36 @@
 #
 # Every pane's command is staged (typed) but NOT executed - press Enter in a
 # pane when you're ready to narrate it, instead of everything firing at once.
+#
+# Color scheme (256-color palette, tuned for dark-background terminals):
+#   pane background: blue = v1, green = v2 - color-codes which schema version
+#     a pane belongs to, independent of which window it's in
+#   window border: blue = v1-only window, amber = window where v1 and v2
+#     are both present (build, v2-evolution) - signals "this is a mixed one"
 set -euo pipefail
 
 SESSION="data-contracts-demo"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+V1_BG="colour17"
+V2_BG="colour22"
+V1_BORDER="colour24"
+V1_BORDER_ACTIVE="colour39,bold"
+MIXED_BORDER="colour136"
+MIXED_BORDER_ACTIVE="colour214,bold"
+
 stage() { # <pane> <title> <command>
   tmux select-pane -t "$1" -T "$2"
   tmux send-keys -t "$1" "$3"
+}
+
+tint() { # <pane> <bg-color>
+  tmux select-pane -t "$1" -P "bg=$2"
+}
+
+window_border() { # <window> <border-fg> <active-border-fg>
+  tmux set-window-option -t "$1" pane-border-style "fg=$2"
+  tmux set-window-option -t "$1" pane-active-border-style "fg=$3"
 }
 
 if tmux has-session -t "$SESSION" 2>/dev/null; then
@@ -29,11 +51,17 @@ tmux set-option -t "$SESSION" pane-border-format "#{pane_title}"
 tmux split-window -h -t "$SESSION:build" -c "$ROOT"
 stage "$SESSION:build.0" "build v1" "make bootstrap-v1"
 stage "$SESSION:build.1" "build v2" "make bootstrap-v2"
+tint "$SESSION:build.0" "$V1_BG"
+tint "$SESSION:build.1" "$V2_BG"
+window_border "$SESSION:build" "$MIXED_BORDER" "$MIXED_BORDER_ACTIVE"
 
 tmux new-window -t "$SESSION" -n v1-demo -c "$ROOT"
 tmux split-window -h -t "$SESSION:v1-demo" -c "$ROOT"
 stage "$SESSION:v1-demo.0" "consumer v1" "make demo-consumer-v1"
 stage "$SESSION:v1-demo.1" "producer v1" "make demo-producer-v1"
+tint "$SESSION:v1-demo.0" "$V1_BG"
+tint "$SESSION:v1-demo.1" "$V1_BG"
+window_border "$SESSION:v1-demo" "$V1_BORDER" "$V1_BORDER_ACTIVE"
 
 tmux new-window -t "$SESSION" -n v2-evolution -c "$ROOT"
 tmux split-window -h -t "$SESSION:v2-evolution" -c "$ROOT"
@@ -42,6 +70,10 @@ tmux select-layout -t "$SESSION:v2-evolution" main-vertical
 stage "$SESSION:v2-evolution.0" "consumer v1 (before)" "make demo-consumer-v1"
 stage "$SESSION:v2-evolution.1" "consumer v2 (migrated)" "make demo-consumer-v2"
 stage "$SESSION:v2-evolution.2" "producer v1" "make demo-producer-v1"
+tint "$SESSION:v2-evolution.0" "$V1_BG"
+tint "$SESSION:v2-evolution.1" "$V2_BG"
+tint "$SESSION:v2-evolution.2" "$V1_BG"
+window_border "$SESSION:v2-evolution" "$MIXED_BORDER" "$MIXED_BORDER_ACTIVE"
 
 tmux select-window -t "$SESSION:build"
 tmux attach -t "$SESSION"

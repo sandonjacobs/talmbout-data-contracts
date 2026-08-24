@@ -197,7 +197,9 @@ consumed correctly by both the v1 and v2 consumers.
 
 Instead of opening terminals by hand, `make demo-tmux` builds a tmux session with a `build` window and the `v1-demo`
 and `v2-evolution` windows above, panes split and labeled. Each pane's command is typed in but **not** run - press
-Enter in a pane when you're ready to narrate it, so nothing fires before you're on that slide:
+Enter in a pane when you're ready to narrate it, so nothing fires before you're on that slide. Panes are also
+color-coded so the audience can tell v1 from v2 at a glance: blue panes/borders are v1, green panes are v2, and a
+window's border goes amber whenever both versions are present in it side by side (`build`, `v2-evolution`):
 
 ```shell
 make demo-tmux
