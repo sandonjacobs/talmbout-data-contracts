@@ -60,8 +60,10 @@ terraform-destroy: ## Destroy Terraform resources (use with caution)
 	@echo "⚠️  WARNING: This will destroy all Confluent Cloud resources!"
 	@read -p "Are you sure? [y/N]: " confirm; \
 	if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
-		cd cc-terraform && terraform destroy -auto-approve; \
-		echo "✓ Resources destroyed"; \
+		cd cc-terraform && terraform destroy -auto-approve && cd .. && \
+		rm -f shared/src/main/resources/confluent.properties && \
+		echo "✓ Resources destroyed" && \
+		echo "✓ Removed shared/src/main/resources/confluent.properties (it pointed at the now-destroyed cluster)"; \
 	else \
 		echo "Cancelled."; \
 	fi

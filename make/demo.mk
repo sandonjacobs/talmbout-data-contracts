@@ -1,7 +1,7 @@
 # Demo Orchestration
 # ==================
 
-.PHONY: demo-v1 demo-v2 demo-producer-v1 demo-producer-v2 demo-consumer-v1 demo-consumer-v2 demo-full demo-reset demo-status check-demo-ready
+.PHONY: demo-v1 demo-v2 demo-producer-v1 demo-producer-v2 demo-consumer-v1 demo-consumer-v2 demo-full demo-reset demo-status check-demo-ready demo-tmux demo-tmux-kill
 
 # Configuration
 # NOTE: the app's -i/--interval flag is milliseconds, not seconds - keep this suffix so it's
@@ -110,6 +110,12 @@ demo-reset: ## Reset consumer group offsets
 	@echo ""
 	@echo "To manually delete a specific group instead, use the Confluent CLI:"
 	@echo "  confluent kafka consumer-group delete <group-id>"
+
+demo-tmux: ## Lay out a tmux session with build/v1-demo/v2-evolution windows (commands staged, not run)
+	@./scripts/demo-tmux.sh
+
+demo-tmux-kill: ## Tear down the demo tmux session
+	@tmux kill-session -t data-contracts-demo 2>/dev/null && echo "✓ Session killed" || echo "No session to kill."
 
 demo-status: ## Show topics and consumer groups
 	@echo "Demo Status"

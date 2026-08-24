@@ -124,6 +124,8 @@ Run `make help` to see all available commands. Key commands are organized by cat
 - `make demo-full` - Show all demo parameters
 - `make demo-reset` - Reset consumer group offsets
 - `make demo-status` - Show topics and consumer groups
+- `make demo-tmux` - Lay out a tmux session (build / v1-demo / v2-evolution windows) with each pane's command staged but not run
+- `make demo-tmux-kill` - Tear down the demo tmux session
 
 ## Configuration
 
@@ -213,7 +215,9 @@ Watch how the v2 consumer automatically transforms v1 events using migration rul
 make teardown-cloud
 ```
 
-This destroys all Terraform-managed resources in Confluent Cloud.
+This destroys all Terraform-managed resources in Confluent Cloud and, on success, removes
+`shared/src/main/resources/confluent.properties` so it can't be mistaken for a still-valid connection to a
+cluster that no longer exists.
 
 ## Troubleshooting
 

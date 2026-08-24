@@ -193,6 +193,18 @@ their own schedule, without coordinating a synchronized cutover.
 You can also run `make demo-producer-v2` in a fourth terminal to show v2-native events flowing alongside v1 ones,
 consumed correctly by both the v1 and v2 consumers.
 
+### Optional: Lay It All Out in tmux
+
+Instead of opening terminals by hand, `make demo-tmux` builds a tmux session with a `build` window and the `v1-demo`
+and `v2-evolution` windows above, panes split and labeled. Each pane's command is typed in but **not** run - press
+Enter in a pane when you're ready to narrate it, so nothing fires before you're on that slide:
+
+```shell
+make demo-tmux
+```
+
+Run `make demo-tmux-kill` afterward (or before a re-run) to tear the session down cleanly.
+
 ## Teardown
 
 When you're done with the demo, destroy the Confluent Cloud environment:
@@ -201,5 +213,7 @@ When you're done with the demo, destroy the Confluent Cloud environment:
 make teardown-cloud
 ```
 
-This prompts for confirmation before running `terraform destroy`. Check the Confluent Cloud console afterward to
-confirm the environment no longer exists.
+This prompts for confirmation before running `terraform destroy`, and on success also removes
+`shared/src/main/resources/confluent.properties` - otherwise it would keep pointing at a cluster that no longer
+exists, and `check-demo-ready` would wrongly consider the demo ready to run again. Check the Confluent Cloud
+console afterward to confirm the environment no longer exists.
