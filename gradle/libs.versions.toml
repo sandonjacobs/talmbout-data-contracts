@@ -9,6 +9,7 @@ confluent = "8.3.0"
 google-protobuf-java = "4.35.1"
 google-protobuf-plugin = "0.10.0"
 grpc = "1.83.1"
+jfiglet = "0.0.9"
 junit5 = "5.14.4"
 kotlin-faker = "1.16.2"
 kotlinx-coroutines = "1.11.0"
@@ -30,6 +31,7 @@ confluent-schema-rules = { group = "io.confluent", name = "kafka-schema-rules", 
 google-protobuf-java = { group = "com.google.protobuf", name = "protobuf-java", version.ref = "google-protobuf-java" }
 grpc-stub = { group = "io.grpc", name ="grpc-stub", version.ref = "grpc" }
 grpc-protobuf = { group = "io.grpc", name ="grpc-protobuf", version.ref = "grpc" }
+jfiglet = { group = "com.github.lalyos", name = "jfiglet", version.ref = "jfiglet" }
 junit5-jupiter = { group = "org.junit.jupiter",  name = "junit-jupiter", version.ref = "junit5" }
 junit5-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher" }
 kotlin-faker = { group = "io.github.serpro69", name = "kotlin-faker", version.ref = "kotlin-faker" }

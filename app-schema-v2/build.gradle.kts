@@ -26,6 +26,7 @@ dependencies {
 
     implementation(libs.clikt)
     implementation(libs.clikt.markdown)
+    implementation(libs.jfiglet)
 
     implementation(libs.apache.kafka.clients)
     implementation(libs.confluent.avro.serializer)

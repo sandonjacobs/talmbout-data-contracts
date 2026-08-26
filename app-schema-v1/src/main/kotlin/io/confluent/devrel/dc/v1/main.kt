@@ -6,6 +6,7 @@ import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
+import com.github.lalyos.jfiglet.FigletFont
 import io.confluent.devrel.Membership
 import io.confluent.devrel.dc.v1.kafka.MembershipConsumer
 import io.confluent.devrel.dc.v1.kafka.MembershipProducer
@@ -37,6 +38,23 @@ class ApplicationCommand : CliktCommand(name = "app-schema-v1") {
     override fun run() = Unit
 }
 
+fun printBanner(command: String) {
+    val role = command.replaceFirstChar { it.uppercase() }
+    val art = FigletFont.convertOneLine("V1 -> $role").trimEnd('\n').lines()
+    val subtitle = "app-schema-v1 ▶ starting: $command"
+    val width = maxOf(art.maxOf { it.length }, subtitle.length)
+    val horizontal = "═".repeat(width + 4)
+    val blankLine = "║  ${" ".repeat(width)}  ║"
+
+    println("╔$horizontal╗")
+    println(blankLine)
+    art.forEach { println("║  ${it.padEnd(width)}  ║") }
+    println("║  ${subtitle.padEnd(width)}  ║")
+    println(blankLine)
+    println("╚$horizontal╝")
+    println()
+}
+
 abstract class RootCommand : CliktCommand() {
     val configPath: String by option("-p", "--config-path", help = "Path to config file")
         .default("/confluent.properties")
@@ -61,6 +79,7 @@ class ConsumerCommand : RootCommand() {
         .default("schema-v1")
 
     override fun run() {
+        printBanner(commandName)
 
         val consumerConfigOverrides = mapOf(
             ConsumerConfig.GROUP_ID_CONFIG to groupId,
@@ -92,6 +111,7 @@ class ProducerCommand : RootCommand() {
         .default(30)
 
     override fun run() {
+        printBanner(commandName)
 
         val howOften = interval.toDuration(DurationUnit.MILLISECONDS)
         val howLong = duration.toDuration(DurationUnit.SECONDS)
