@@ -14,6 +14,7 @@ apply(from = "$rootDir/gradle/schema-registry-config.gradle.kts")
 // RegisterSubjectExtension/RegisterSchemasTask classes directly instead.
 
 val srUrl = project.extra["srUrl"] as String
+val srConfigError = project.extra["srConfigError"] as String?
 
 @Suppress("UNCHECKED_CAST")
 val srClientConfig = project.extra["srClientConfig"] as Map<String, String>
@@ -32,7 +33,10 @@ tasks.register<RegisterSchemasTask>("registerSchemasV1") {
     outputDirectory.set("${projectDir}/schema-registry-plugin/v1")
     rootDir.set(projectDir)
     failFast.set(true)
-    doFirst { mkdir("${projectDir}/schema-registry-plugin/v1") }
+    doFirst {
+        srConfigError?.let { throw GradleException(it) }
+        mkdir("${projectDir}/schema-registry-plugin/v1")
+    }
 }
 
 val registerV2Subjects = RegisterSubjectExtension(project.objects).apply {
@@ -56,5 +60,8 @@ tasks.register<RegisterSchemasTask>("registerSchemasV2") {
     outputDirectory.set("${projectDir}/schema-registry-plugin/v2")
     rootDir.set(projectDir)
     failFast.set(true)
-    doFirst { mkdir("${projectDir}/schema-registry-plugin/v2") }
+    doFirst {
+        srConfigError?.let { throw GradleException(it) }
+        mkdir("${projectDir}/schema-registry-plugin/v2")
+    }
 }

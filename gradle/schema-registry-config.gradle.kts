@@ -15,19 +15,33 @@ import java.util.Properties
 val schemaRegistryConfigFileName = (project.findProperty("schemaRegistryConfig") as String?) ?: "confluent.properties"
 val schemaRegistryConfigFile = rootProject.file("shared/src/main/resources/$schemaRegistryConfigFileName")
 
-val srProperties = Properties()
-FileInputStream(schemaRegistryConfigFile).use { srProperties.load(it) }
-
-val srUrl = srProperties.getProperty("schema.registry.url")
-    ?: throw GradleException("Missing 'schema.registry.url' in $schemaRegistryConfigFile")
+// Read leniently at configuration time: tasks that never touch Schema Registry (clean, tasks,
+// help, ...) shouldn't fail just because this file is absent. Applying build scripts are
+// responsible for wiring a doFirst check (using srConfigError below) onto whichever of their own
+// tasks actually needs srUrl/srClientConfig, so the clear error only surfaces when one of those
+// tasks runs.
+var srUrl: String? = null
 
 // Local/no-auth registries won't have these keys; leave them out of the client config rather
 // than requiring dummy values.
 val srClientConfig = mutableMapOf<String, String>()
-srProperties.getProperty("basic.auth.credentials.source")?.let { srClientConfig["basic.auth.credentials.source"] = it }
-srProperties.getProperty("basic.auth.user.info")
-    ?.takeIf { it.isNotBlank() }
-    ?.let { srClientConfig["basic.auth.user.info"] = it }
 
-project.extra["srUrl"] = srUrl
+if (schemaRegistryConfigFile.exists()) {
+    val srProperties = Properties()
+    FileInputStream(schemaRegistryConfigFile).use { srProperties.load(it) }
+
+    srUrl = srProperties.getProperty("schema.registry.url")
+
+    srProperties.getProperty("basic.auth.credentials.source")?.let { srClientConfig["basic.auth.credentials.source"] = it }
+    srProperties.getProperty("basic.auth.user.info")
+        ?.takeIf { it.isNotBlank() }
+        ?.let { srClientConfig["basic.auth.user.info"] = it }
+}
+
+project.extra["srUrl"] = srUrl ?: ""
 project.extra["srClientConfig"] = srClientConfig as Map<String, String>
+project.extra["srConfigError"] = if (srUrl == null) {
+    "Missing '$schemaRegistryConfigFile' (or its 'schema.registry.url' property); required to reach Schema Registry for this task."
+} else {
+    null
+}

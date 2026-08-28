@@ -73,3 +73,9 @@ schemaRegistry {
     }
 }
 
+tasks.named("downloadSchemasTask") {
+    doFirst {
+        (project.extra["srConfigError"] as String?)?.let { throw GradleException(it) }
+    }
+}
+
