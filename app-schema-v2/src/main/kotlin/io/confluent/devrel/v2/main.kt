@@ -7,12 +7,14 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
 import com.github.lalyos.jfiglet.FigletFont
+import io.confluent.devrel.Address
 import io.confluent.devrel.Membership
 import io.confluent.devrel.ValidityPeriod
 import io.confluent.devrel.v2.kafka.MembershipConsumer
 import io.confluent.devrel.v2.kafka.MembershipProducer
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig
+import io.github.serpro69.kfaker.Faker
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -39,6 +41,18 @@ fun main(args: Array<String>) = ApplicationCommand()
 class ApplicationCommand : CliktCommand(name = "app-schema-v2") {
     override fun run() = Unit
 }
+
+fun Address.Builder.setRandomUsAddress(faker: Faker): Address.Builder =
+    this.setAddressLine1(faker.address.streetAddress())
+        .setAddressLine2(faker.address.secondaryAddress())
+        .setCity(faker.address.city())
+        .setState(faker.address.stateAbbr())
+        .setPostalCode(faker.address.postcode())
+        .setCountry("US")
+
+fun ValidityPeriod.Builder.setRandomPeriod(): ValidityPeriod.Builder =
+    this.setFrom(LocalDate.now().minusDays(Random.nextLong(100, 1000)))
+        .setTo(LocalDate.now().plusWeeks(Random.nextLong(1, 52)))
 
 fun printBanner(command: String) {
     val role = command.replaceFirstChar { it.uppercase() }
@@ -133,6 +147,8 @@ class ProducerCommand : RootCommand() {
             )
         )
 
+        val faker = Faker()
+
         runBlocking {
             coroutineScope {
                 launch {
@@ -144,8 +160,12 @@ class ProducerCommand : RootCommand() {
                             .setUserId(userId)
                             .setValidityPeriod(
                                 ValidityPeriod.newBuilder()
-                                    .setFrom(LocalDate.now().minusDays(kotlin.random.Random.nextLong(100, 1000)))
-                                    .setTo(LocalDate.now().plusWeeks(Random.nextLong(1, 52)))
+                                    .setRandomPeriod()
+                                    .build()
+                            )
+                            .setAddress(
+                                Address.newBuilder()
+                                    .setRandomUsAddress(faker)
                                     .build()
                             )
                             .build()
