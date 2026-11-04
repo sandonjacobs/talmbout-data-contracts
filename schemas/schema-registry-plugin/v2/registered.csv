@@ -1,3 +1,2 @@
 subject, path, id
-validity-period-value, /Users/sandonj/code/opensource/sandonjacobs/for-talks/data-contracts/schemas/src/main/avro/validity_period.avsc, 100002
-membership-avro-value, /Users/sandonj/code/opensource/sandonjacobs/for-talks/data-contracts/schemas/src/main/avro/membership_v2.avsc, 100003
+membership-avro-value, /Users/sandonj/code/opensource/sandonjacobs/for-talks/data-contracts/schemas/src/main/avro/membership_v2.avsc, 100002

@@ -55,6 +55,10 @@ export-cloud-config: ## Export Confluent Cloud connection properties
 		| jq -r 'to_entries | map( {key: .key|tostring|split("_")|join("."), value: .value} ) | map("\(.key)=\(.value.value)") | .[]' \
 		> ../shared/src/main/resources/confluent.properties
 	@echo "✓ Configuration exported to shared/src/main/resources/confluent.properties"
+	@cd cc-terraform && terraform output -json \
+		| jq -r 'to_entries | map("\(.key|ascii_upcase)=\(.value.value)") | .[]' \
+		> ../.env
+	@echo "✓ Configuration exported to .env"
 
 terraform-destroy: ## Destroy Terraform resources (use with caution)
 	@echo "⚠️  WARNING: This will destroy all Confluent Cloud resources!"

@@ -40,20 +40,16 @@ tasks.register<RegisterSchemasTask>("registerSchemasV1") {
 }
 
 val registerV2Subjects = RegisterSubjectExtension(project.objects).apply {
-    // Registered first so it exists as its own subject/version before membership-avro-value
-    // below resolves a real reference to it (RegisterTaskAction registers subjects in the
-    // order they're declared here).
-    subject(inputSubject = "validity-period-value", file = "$projectDir/src/main/avro/validity_period.avsc", type = "AVRO")
-
+    // ValidityPeriod and Address are only used by v2, so they're defined as nested types
+    // directly in membership_v2.avsc rather than as separate referenced subjects.
     subject(inputSubject = "membership-avro-value", file = "$projectDir/src/main/avro/membership_v2.avsc", type = "AVRO")
-        .addReference("io.confluent.devrel.ValidityPeriod", "validity-period-value", -1)
         .setMetadata("$projectDir/src/main/rules/membership_major_version_2.json")
         .setRuleSet("$projectDir/src/main/rules/membership_migration.json")
 }
 
 tasks.register<RegisterSchemasTask>("registerSchemasV2") {
     group = "registry"
-    description = "Register the v2 Membership + ValidityPeriod schemas (major_version=2) with the migration ruleset"
+    description = "Register the v2 Membership schema (major_version=2, with nested ValidityPeriod/Address) with the migration ruleset"
     url.set(srUrl)
     clientConfig.set(srClientConfig)
     subjects.set(registerV2Subjects.subjects)

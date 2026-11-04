@@ -12,6 +12,7 @@ import io.confluent.devrel.dc.v1.kafka.MembershipConsumer
 import io.confluent.devrel.dc.v1.kafka.MembershipProducer
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig
+import io.github.serpro69.kfaker.Faker
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -54,6 +55,14 @@ fun printBanner(command: String) {
     println("╚$horizontal╝")
     println()
 }
+
+fun Membership.Builder.setRandomUsAddress(faker: Faker): Membership.Builder =
+    this.setAddressLine1(faker.address.streetAddress())
+        .setAddressLine2(faker.address.secondaryAddress())
+        .setCity(faker.address.city())
+        .setState(faker.address.stateAbbr())
+        .setPostalCode(faker.address.postcode())
+        .setCountry("US")
 
 abstract class RootCommand : CliktCommand() {
     val configPath: String by option("-p", "--config-path", help = "Path to config file")
@@ -108,7 +117,7 @@ class ProducerCommand : RootCommand() {
         .default(100)
     val duration: Int by option("-d", "--duration", help = "Duration in seconds")
         .int()
-        .default(30)
+        .default(300)
 
     override fun run() {
         printBanner(commandName)
@@ -131,6 +140,8 @@ class ProducerCommand : RootCommand() {
             )
         )
 
+        val faker = Faker()
+
         runBlocking {
             coroutineScope {
                 launch {
@@ -140,8 +151,9 @@ class ProducerCommand : RootCommand() {
                         val userId = UUID.randomUUID().toString()
                         val membership = Membership.newBuilder()
                             .setUserId(userId)
-                            .setStartDate(LocalDate.now().minusDays(kotlin.random.Random.nextLong(100, 1000)))
+                            .setStartDate(LocalDate.now().minusDays(Random.nextLong(100, 1000)))
                             .setEndDate(LocalDate.now().plusWeeks(Random.nextLong(1, 52)))
+                            .setRandomUsAddress(faker)
                             .build()
                         producer.send("membership-avro", userId, membership)
                         logger?.debug("---> Sent message with userId {}, sleeping for {}", userId, howOften)

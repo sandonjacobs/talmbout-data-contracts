@@ -4,6 +4,27 @@
   "type": "record",
   "fields": [
     { "name": "user_id", "type": "string" },
-    { "name": "validity_period", "type": "io.confluent.devrel.ValidityPeriod" }
+    { "name": "validity_period", "type": {
+        "name": "ValidityPeriod",
+        "type": "record",
+        "fields": [
+          {"name": "from", "type": {"type": "int", "logicalType": "date"}},
+          {"name": "to", "type": {"type": "int", "logicalType": "date"}}
+        ]
+      }
+    },
+    { "name": "address", "type": {
+        "name": "Address",
+        "type": "record",
+        "fields": [
+          {"name": "address_line1", "type": "string"},
+          {"name": "address_line2", "type": ["null", "string"], "default": null},
+          {"name": "city", "type": "string"},
+          {"name": "state", "type": "string"},
+          {"name": "postal_code", "type": "string"},
+          {"name": "country", "type": "string", "default": "US"}
+        ]
+      }
+    }
   ]
 }
