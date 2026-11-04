@@ -124,7 +124,7 @@ class ProducerCommand : RootCommand() {
         .default(100)
     val duration: Int by option("-d", "--duration", help = "Duration in seconds")
         .int()
-        .default(30)
+        .default(300)
 
     override fun run() {
         printBanner(commandName)

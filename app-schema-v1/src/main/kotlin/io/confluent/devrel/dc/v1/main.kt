@@ -117,7 +117,7 @@ class ProducerCommand : RootCommand() {
         .default(100)
     val duration: Int by option("-d", "--duration", help = "Duration in seconds")
         .int()
-        .default(30)
+        .default(300)
 
     override fun run() {
         printBanner(commandName)
@@ -151,7 +151,7 @@ class ProducerCommand : RootCommand() {
                         val userId = UUID.randomUUID().toString()
                         val membership = Membership.newBuilder()
                             .setUserId(userId)
-                            .setStartDate(LocalDate.now().minusDays(kotlin.random.Random.nextLong(100, 1000)))
+                            .setStartDate(LocalDate.now().minusDays(Random.nextLong(100, 1000)))
                             .setEndDate(LocalDate.now().plusWeeks(Random.nextLong(1, 52)))
                             .setRandomUsAddress(faker)
                             .build()
